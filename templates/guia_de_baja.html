@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía de Baja - Medical</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  /* Ajustes extra rápidos para la Guía de Baja */
+  .items-table th, .items-table td { text-align: center; }
+  .items-table td:nth-child(3) { text-align: left; } /* Descripción a la izquierda */
+  .signatures-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 40px;
+  }
+  .sig-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .sig-line-baja {
+    width: 80%;
+    border-top: 1px solid var(--text-color);
+    margin-top: 50px;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>📋 Generador de Guía de Baja</h1>
+  
+  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">🏠</button>
+  
+  <button class="btn btn-success" onclick="addRow()">＋ Agregar equipo</button>
+  <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
+  <button class="btn btn-outline" onclick="clearForm()">🗑 Limpiar todo</button>
+</div>
+
+<div class="card" id="baja-doc">
+
+  <div class="doc-header">
+    <div class="logo-cell">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Medical" style="max-height: 64px; max-width: 180px; object-fit: contain;">
+      <div class="logo-sub">Centro de Apoyo al Diagnóstico Médico</div>
+    </div>
+    <div class="doc-title-cell">
+      <div class="doc-title" style="font-size: 22px;">GUÍA DE BAJA DE EQUIPOS DE COMPUTO</div>
+    </div>
+    <div class="doc-num-cell">
+      <div class="doc-num-label">N°</div>
+      <input class="doc-num-input" id="baja-number" value="{{ numero_baja }}" maxlength="12" readonly>
+    </div>
+  </div>
+
+  <div class="section-title">Datos Principales</div>
+  <div class="data-grid cols-4">
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">Solicitante:</span>
+      <input class="field" value="Sistemas">
+    </div>
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Encargado:</span>
+      <input class="field" value="Sistemas">
+    </div>
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">Fecha:</span>
+      <input class="field" type="date" id="fecha">
+    </div>
+
+  </div>
+
+  <div class="section-title">Detalles de Traslado</div>
+  <div class="data-grid cols-4">
+    <div class="data-cell span-3" style="gap:4px">
+      <span class="lbl">Encargado:</span>
+      <input class="field" value="FABRICIO DEL AGUILA MENDOZA">
+    </div>
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">DNI:</span>
+      <input class="field" value="72035278">
+    </div>
+
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Sede:</span>
+      <input class="field" value="Arenales">
+    </div>
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Almacén:</span>
+      <input class="field" value="Arenales">
+    </div>
+  </div>
+
+  <div class="items-wrapper" style="margin-top: 20px;">
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width:40px">ITEM</th>
+          <th style="width:65px">CÓDIGO</th>
+          
+          <th>DESCRIPCIÓN</th>
+          
+          <th style="width:350px">MOTIVO</th>
+          
+          <th style="width:85px">MODELO</th>
+          <th style="width:85px">MARCA</th>
+          <th style="width:50px">CANT.</th>
+          
+          <th style="width:36px" class="no-print"></th>
+        </tr>
+      </thead>
+      <tbody id="items-body">
+        </tbody>
+    </table>
+  </div>
+
+  <div class="totals-area" style="justify-content: flex-end; padding-right: 50px;">
+    <div class="total-line">
+      <span class="total-lbl" style="font-size: 16px;">TOTAL UND:</span>
+      <span class="total-val grand" id="total-qty">0 UND</span>
+    </div>
+  </div>
+
+  <div class="section-title">FIRMAS</div>
+  <div class="data-grid cols-2" style="padding-top: 100px; padding-bottom: 20px;">
+    
+    <div style="position: relative; text-align: center;">
+      <div style="position: absolute; top: -75px; width: 100%; font-weight: bold; font-size: 12px; color: #1a4971;">AUTORIZA EL DESECHO</div>
+      
+      <div style="border-top: 1px solid #333; width: 75%; margin: 0 auto;"></div>
+      
+      <div style="margin-top: 15px;">
+        <input value="RICARDO INGA" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none; display: block;">
+        <input value="GERENTE CORPORATIVO" style="border: none; background: transparent; text-align: center; width: 100%; outline: none; color: #666; margin-top: 4px; display: block;">
+      </div>
+    </div>
+
+    <div style="position: relative; text-align: center;">
+      <div style="position: absolute; top: -75px; width: 100%; font-size: 12px; visibility: hidden;">ESPACIO</div>
+      
+      <div style="border-top: 1px solid #333; width: 75%; margin: 0 auto;"></div>
+      
+      <div style="margin-top: 15px;">
+        <input value="FABRICIO DEL AGUILA" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none; display: block;">
+        <input value="SISTEMAS" style="border: none; background: transparent; text-align: center; width: 100%; outline: none; color: #666; margin-top: 4px; display: block;">
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<div class="no-print" style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
+  <button class="btn btn-success" style="background-color: #27ae60; font-size: 16px; padding: 12px 30px; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);" onclick="guardarEnHistorial()">
+    💾 Guardar Guía en el Historial
+  </button>
+</div>
+
+<script>
+  // Poner fecha de hoy
+  document.getElementById('fecha').valueAsDate = new Date();
+
+  // Datos iniciales de prueba (como en la imagen)
+  const initialItems = [
+    { desc: '', motivo: '', modelo: '', marca: '', qty: 1 },
+    { desc: '', motivo: '', modelo: '', marca: '', qty: 1 },
+    { desc: '', motivo: '', modelo: '', marca: '', qty: 1 },
+  ];
+
+  function addRow(data = {}) {
+    const tbody = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="item-index" style="font-weight:bold; color:#555;"></td>
+      <td><input type="text" value="${data.codigo||''}" placeholder="—" style="text-align:center;"></td>
+      <td><input type="text" value="${data.desc||''}" placeholder="Descripción del equipo" style="text-align:center;"></td>
+      <td><input type="text" value="${data.motivo||''}" placeholder="Malogrado" style="text-align:center;"></td>
+      <td><input type="text" value="${data.modelo||''}" placeholder="Modelo" style="text-align:center;"></td>
+      <td><input type="text" value="${data.marca||''}" placeholder="Marca" style="text-align:center;"></td>
+      <td><input type="number" value="${data.qty||1}" min="1" class="qty-input" oninput="recalc()" style="text-align:center;"></td>
+      <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+  }
+
+  function delRow(btn) {
+    btn.closest('tr').remove();
+    recalc();
+  }
+
+  function recalc() {
+    const rows = document.querySelectorAll('#items-body tr');
+    let totalUnidades = 0;
+    
+    rows.forEach((tr, index) => {
+      // Actualizar el número de ITEM (1, 2, 3...)
+      tr.querySelector('.item-index').textContent = index + 1;
+      
+      // Sumar cantidades
+      const qtyInput = tr.querySelector('.qty-input');
+      const qty = parseInt(qtyInput.value) || 0;
+      totalUnidades += qty;
+    });
+
+    // Actualizar texto del Total
+    document.getElementById('total-qty').textContent = totalUnidades + ' UND';
+  }
+
+  function clearForm() {
+    if (!confirm('¿Limpiar todos los equipos de la lista?')) return;
+    document.getElementById('items-body').innerHTML = '';
+    recalc();
+  }
+
+  function guardarEnHistorial() {
+    if (!confirm('¿Deseas guardar esta Guía de Baja en el historial?')) return;
+
+    window.scrollTo(0, 0);
+    const elemento = document.getElementById('baja-doc');
+    const numeroDoc = document.getElementById('baja-number').value || 'SinNumero';
+    const nombreArchivo = `BAJA_${numeroDoc}.pdf`;
+
+    const opciones = {
+      margin:       [10, 10, 10, 10],
+      filename:     nombreArchivo,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, scrollY: 0, windowWidth: document.documentElement.scrollWidth },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+      const formData = new FormData();
+      formData.append('pdf', pdfBlob, nombreArchivo);
+
+      fetch('/guardar_pdf', {
+        method: 'POST',
+        body: formData
+      })
+      .then(respuesta => respuesta.json())
+      .then(datos => {
+        if (datos.success) {
+          alert('✅ ¡Guardado exitosamente!');
+          window.location.href = '/bajas'; // Recarga la página
+        } else {
+          alert('❌ Error del servidor: ' + datos.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión.');
+      });
+    });
+  }
+
+  // Cargar datos iniciales
+  initialItems.forEach(addRow);
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión TI - Medical</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row text-center mb-4">
+        <div class="col">
+            <h1 class="display-5 fw-bold text-primary">Panel de Gestión TI</h1>
+            <p class="lead text-muted">Generación y control de guías de compra y baja de equipos</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-primary">
+                <div class="card-body text-center">
+                    <h3 class="card-title text-primary">🛒 Orden de Compra</h3>
+                    <p class="card-text">Generar una nueva solicitud para compra de equipos, repuestos o suministros.</p>
+                    <a href="/compras" class="btn btn-primary btn-lg mt-3 w-100">Crear Orden</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-danger">
+                <div class="card-body text-center">
+                    <h3 class="card-title text-danger">♻️ Guía de Baja</h3>
+                    <p class="card-text">Registrar la salida o desecho de equipos de cómputo por fallas u obsolescencia.</p>
+                    <a href="/bajas" class="btn btn-danger btn-lg mt-3 w-100">Crear Guía</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-success">
+                <div class="card-body text-center">
+                    <h3 class="card-title text-success">📂 Historial</h3>
+                    <p class="card-text">Revisar los documentos generados anteriormente y descargarlos.</p>
+                    <a href="/historial" class="btn btn-success btn-lg mt-3 w-100">Ver Archivos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

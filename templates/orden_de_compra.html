@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orden de Compra - Medical</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>📋 Generador de Orden de Compra</h1>
+  
+  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">🏠</button>
+  
+  <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">💱 Moneda: Soles (S/)</button>
+  <button id="btn-igv-toggle" class="btn btn-igv" onclick="toggleIGV()">Precios INCLUYEN IGV</button>
+  <button class="btn btn-success" onclick="addRow()">＋ Agregar ítem</button>
+  <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
+  <button class="btn btn-outline" onclick="clearForm()">🗑 Limpiar todo</button>
+</div>
+
+<div class="card" id="oc-doc">
+
+  <div class="doc-header">
+    <div class="logo-cell">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Medical" style="max-height: 64px; max-width: 180px; object-fit: contain;">
+      <div class="logo-sub">Centro de Apoyo al Diagnóstico Médico</div>
+    </div>
+    <div class="doc-title-cell">
+      <div class="doc-title">Orden de Compra</div>
+    </div>
+    <div class="doc-num-cell">
+      <div class="doc-num-label">N°</div>
+      <input class="doc-num-input" id="oc-number" value="{{ numero_oc }}" maxlength="12" readonly>
+    </div>
+  </div>
+
+  <div class="section-title">Datos</div>
+  <div class="data-grid cols-4">
+    <div class="data-cell">
+      <span class="lbl">Razón Social:</span>
+    </div>
+    <div class="data-cell span-2">
+      <input class="field" id="razon-social" value="MEDICAL DENT DIGITAL" placeholder="Razón social">
+    </div>
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">R.U.C.:</span>
+      <input class="field" id="ruc" value="20553850330" placeholder="RUC">
+    </div>
+
+    <div class="data-cell">
+      <span class="lbl">Dirección:</span>
+    </div>
+    <div class="data-cell span-3">
+      <input class="field" id="direccion" value="AV. ARENALES NRO. 630 LIMA - LIMA - JESUS MARIA">
+    </div>
+
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">Solicitante:</span>
+      <input class="field" id="solicitante" value="SISTEMAS" placeholder="">
+    </div>
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">Encargado:</span>
+      <input class="field" id="encargado" value="FABRICIO DEL AGUILA" placeholder="">
+    </div>
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Fecha:</span>
+      <input class="field" type="date" id="fecha" style="max-width: 160px;">
+    </div>
+
+    <div class="data-cell span-4" style="gap:4px">
+      <span class="lbl">Motivo:</span>
+      <input class="field" id="motivo" placeholder="Motivo de la compra">
+    </div>
+  </div>
+
+  <div class="section-title">Datos Proveedor</div>
+  <div class="provider-grid">
+    <div class="provider-col">
+      <input class="provider-name-input" id="prov-nombre" placeholder="Nombre del proveedor">
+      <div class="provider-row">
+        <span class="lbl">R.U.C</span>
+        <input class="field" id="prov-ruc" placeholder="RUC proveedor">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° CTA. SOLES BCP</span>
+        <input class="field" id="prov-cta-soles" placeholder="">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° CCI BCP</span>
+        <input class="field" id="prov-cci" placeholder="">
+      </div>
+    </div>
+    <div class="provider-col">
+      <div style="height:34px"></div>
+      <div class="provider-row">
+        <span class="lbl">Dirección:</span>
+        <input class="field" id="prov-dir" placeholder="Dirección proveedor">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° Contacto:</span>
+        <input class="field" id="prov-contacto" placeholder="Teléfono">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° CTA. DÓLARES BCP</span>
+        <input class="field" id="prov-cta-dolares" placeholder="">
+      </div>
+    </div>
+  </div>
+
+  <div class="items-wrapper">
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th style="width:60px">Ticket Jira</th> 
+          
+          <th>Descripción</th>
+          
+          <th style="width:95px">Marca</th>
+          <th style="width:95px">Modelo</th>
+          
+          <th style="width:45px" title="Cantidad">Cant.</th>
+          
+          <th style="width:85px" title="Valor Unitario">V. Unit.</th>
+          
+          <th style="width:95px" id="col-total-header">Total</th>
+          
+          <th style="width:36px" class="no-print"></th>
+        </tr>
+      </thead>
+      <tbody id="items-body">
+        </tbody>
+    </table>
+  </div>
+
+  <div class="totals-area">
+    <div class="total-line">
+      <span class="total-lbl">Subtotal sin IGV</span>
+      <span class="total-val" id="subtotal">S/ 0.00</span>
+    </div>
+    <div class="total-line">
+      <span class="total-lbl">IGV (18%)</span>
+      <span class="total-val" id="igv-val">S/ 0.00</span>
+    </div>
+    <div class="total-line">
+      <span class="total-lbl">Total con IGV</span>
+      <span class="total-val grand" id="total-igv">S/ 0.00</span>
+    </div>
+  </div>
+
+  <div class="section-title">Observaciones (Para recojo del pedido)</div>
+  <div class="data-grid cols-4" style="border-bottom:none;">
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Encargado:</span>
+      <input class="field" value="FABRICIO DEL AGUILA">
+    </div>
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">DNI:</span>
+      <input class="field" value="72035278">
+    </div>
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Sede:</span>
+      <input class="field" value="Arenales">
+    </div>
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Almacén:</span>
+      <input class="field" value="Oficina Sistemas">
+    </div>
+    <div class="data-cell span-4" style="gap:4px">
+      <span class="lbl">Fecha:</span>
+      <input class="field" type="date" id="obs-fecha" style="max-width: 150px;">
+    </div>
+  </div>
+
+<div class="sigs">
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <input class="sig-label" value="SISTEMAS" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none;">
+      <input class="sig-name-input" value="FABRICIO DEL AGUILA">
+    </div>
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <input class="sig-label" value="GERENTE CORPORATIVO" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none;">
+      <input class="sig-name-input" value="RICARDO INGA">
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <span>★ REVISAR LA ORDEN, SIN AMBAS FIRMAS NO SE CONCRETA LA COMPRA</span>
+    <span id="footer-total" style="color:var(--red);font-size:14px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px">TOTAL CON IGV: S/ 0.00</span>
+  </div>
+
+</div> <div class="no-print"; style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
+  
+  <button class="btn btn-success" style="background-color: #27ae60; font-size: 16px; padding: 12px 30px; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);" onclick="guardarEnHistorial()">
+    💾 Guardar Documento en el Historial
+  </button>
+
+</div>
+
+<script>
+  // ── Set today's dates ──
+  document.getElementById('fecha').valueAsDate = new Date();
+  document.getElementById('obs-fecha').valueAsDate = new Date();
+
+  // ── Variables Globales ──
+  let preciosConIGV = true; 
+  let simboloMoneda = 'S/'; // Por defecto arranca en Soles
+
+  // ── Lógica Moneda Toggle ──
+  function toggleCurrency() {
+    const btn = document.getElementById('btn-currency-toggle');
+    if (simboloMoneda === 'S/') {
+      simboloMoneda = '$';
+      btn.textContent = "💱 Moneda: Dólares ($)";
+    } else {
+      simboloMoneda = 'S/';
+      btn.textContent = "💱 Moneda: Soles (S/)";
+    }
+    recalc(); // Actualizamos todos los textos
+  }
+
+  // ── Lógica IGV Toggle ──
+  function toggleIGV() {
+    preciosConIGV = !preciosConIGV;
+    const btn = document.getElementById('btn-igv-toggle');
+    const headerTotal = document.getElementById('col-total-header');
+    
+    if (preciosConIGV) {
+      btn.textContent = "✅ Precios INCLUYEN IGV";
+      btn.className = "btn btn-igv";
+      headerTotal.textContent = "Total";
+    } else {
+      btn.textContent = "☑️ Precios SIN IGV";
+      btn.className = "btn btn-outline";
+      headerTotal.textContent = "Total sin IGV";
+    }
+    recalc();
+  }
+
+  // ── Initial rows ──
+  const initialItems = [
+    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: 0},
+    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: 0},
+    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: 0},
+  ];
+
+  function addRow(data = {}) {
+    const tbody = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num"><input type="text" value="${data.jira||''}" placeholder="—" oninput="recalc()"></td>
+      <td><input type="text" value="${data.desc||''}" placeholder="Descripción del ítem" oninput="recalc()"></td>
+      <td class="num"><input type="text" value="${data.marca||''}" placeholder="Marca" oninput="recalc()"></td>
+      <td class="num"><input type="text" value="${data.modelo||''}" placeholder="Modelo" oninput="recalc()"></td>
+      <td class="num"><input type="number" value="${data.qty||1}" min="0" oninput="recalc()"></td>
+      <td class="money"><input type="number" value="${data.unit||0}" min="0" step="0.01" oninput="recalc()"></td>
+      <td class="total-cell">${simboloMoneda} 0.00</td>
+      <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+  }
+
+  function delRow(btn) {
+    btn.closest('tr').remove();
+    recalc();
+  }
+
+  function recalc() {
+    const rows = document.querySelectorAll('#items-body tr');
+    let sumaLineas = 0;
+    
+    rows.forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      const qty  = parseFloat(inputs[4]?.value) || 0;
+      const unit = parseFloat(inputs[5]?.value) || 0;
+      const line = qty * unit;
+      sumaLineas += line;
+      tr.querySelector('.total-cell').textContent = simboloMoneda + ' ' + line.toFixed(2);
+    });
+
+    let subtotal, igv, total;
+
+    if (preciosConIGV) {
+      total = sumaLineas;
+      subtotal = total / 1.18;
+      igv = total - subtotal;
+    } else {
+      subtotal = sumaLineas;
+      igv = subtotal * 0.18;
+      total = subtotal + igv;
+    }
+
+    document.getElementById('subtotal').textContent  = simboloMoneda + ' ' + subtotal.toFixed(2);
+    document.getElementById('igv-val').textContent   = simboloMoneda + ' ' + igv.toFixed(2);
+    document.getElementById('total-igv').textContent = simboloMoneda + ' ' + total.toFixed(2);
+    document.getElementById('footer-total').textContent = 'TOTAL CON IGV: ' + simboloMoneda + ' ' + total.toFixed(2);
+  }
+
+  function clearForm() {
+    if (!confirm('¿Limpiar todos los datos del formulario?')) return;
+    document.getElementById('items-body').innerHTML = '';
+    recalc();
+  }
+
+  // ── Lógica para Guardar PDF en Servidor ──
+  function guardarEnHistorial() {
+    if (!confirm('¿Deseas guardar esta Orden de Compra en el historial?')) return;
+
+    // 1. Forzar el scroll hacia arriba para evitar recortes
+    window.scrollTo(0, 0);
+
+    const elemento = document.getElementById('oc-doc');
+    const numeroOC = document.getElementById('oc-number').value || 'SinNumero';
+    const nombreArchivo = `OC_${numeroOC}.pdf`;
+
+    // 2. Opciones mejoradas para html2pdf
+    const opciones = {
+      margin:       [10, 10, 10, 10], // Márgenes [arriba, izquierda, abajo, derecha] en mm
+      filename:     nombreArchivo,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        scrollY: 0, // ¡Esto evita que se corte!
+        windowWidth: document.documentElement.scrollWidth
+      },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: 'avoid-all' } // Evita cortar elementos a la mitad si pasa a otra página
+    };
+
+    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+      const formData = new FormData();
+      formData.append('pdf', pdfBlob, nombreArchivo);
+
+      fetch('/guardar_pdf', {
+        method: 'POST',
+        body: formData
+      })
+      .then(respuesta => respuesta.json())
+      .then(datos => {
+        if (datos.success) {
+          alert('✅ ¡Guardado exitosamente en la carpeta historial!');
+          // Esta línea mágica recarga la página para traer el nuevo número
+          window.location.reload(); 
+        } else {
+          alert('❌ Error del servidor: ' + datos.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al intentar guardar.');
+      });
+    });
+  }
+
+  // Load initial data
+  initialItems.forEach(addRow);
+</script>
+</body>
+</html>
