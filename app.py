@@ -1,5 +1,6 @@
 import os
-from flask import Flask, render_template, request, jsonify
+import sqlite3 # NUEVO IMPORT PARA LA BASE DE DATOS
+from flask import Flask, render_template, request, jsonify, send_from_directory # Movi send_from_directory aquí arriba
 
 app = Flask(__name__)
 
@@ -19,6 +20,29 @@ os.makedirs(CARPETA_BAJAS, exist_ok=True)
 ARCHIVO_CONTADOR = os.path.join(BASE_DIR, 'contador_oc.txt')
 ARCHIVO_CONTADOR_BAJA = os.path.join(BASE_DIR, 'contador_baja.txt')
 
+# --- NUEVA CONFIGURACIÓN DE BASE DE DATOS (PROVEEDORES) ---
+DB_PATH = os.path.join(BASE_DIR, 'database.db')
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Crear la tabla de proveedores si no existe al arrancar la app
+with get_db_connection() as conn:
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS proveedores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT UNIQUE,
+            ruc TEXT,
+            direccion TEXT,
+            contacto TEXT,
+            telefono TEXT
+        )
+    ''')
+
+
+# --- LÓGICA DE CONTADORES ---
 def obtener_siguiente_numero(archivo_txt):
     if not os.path.exists(archivo_txt):
         with open(archivo_txt, 'w') as f:
@@ -37,6 +61,8 @@ def incrementar_numero(archivo_txt):
         f.write(str(nuevo))
     return nuevo
 
+
+# --- RUTAS PRINCIPALES ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -68,9 +94,8 @@ def historial():
 
     return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas)
 
-# Necesitamos esta ruta extra para poder ABRIR los PDFs desde el historial
-from flask import send_from_directory
 
+# --- RUTAS DE ARCHIVOS (PDF) ---
 @app.route('/ver_pdf/<tipo>/<nombre>')
 def ver_pdf(tipo, nombre):
     if tipo == 'compras':
@@ -105,6 +130,29 @@ def guardar_pdf():
     archivo_pdf.save(ruta_guardado)
 
     return jsonify({'success': True, 'message': f'PDF guardado en su carpeta correspondiente'})
+
+
+# --- NUEVAS RUTAS PARA LA BASE DE DATOS (PROVEEDORES) ---
+@app.route('/get_proveedores')
+def get_proveedores():
+    conn = get_db_connection()
+    proveedores = conn.execute('SELECT * FROM proveedores ORDER BY nombre ASC').fetchall()
+    conn.close()
+    return jsonify([dict(p) for p in proveedores])
+
+@app.route('/guardar_proveedor', methods=['POST'])
+def guardar_proveedor():
+    data = request.json
+    try:
+        with get_db_connection() as conn:
+            conn.execute('''
+                INSERT OR REPLACE INTO proveedores (nombre, ruc, direccion, contacto, telefono)
+                VALUES (?, ?, ?, ?, ?)''', 
+                (data.get('nombre'), data.get('ruc'), data.get('direccion'), data.get('contacto'), data.get('telefono', '')))
+            conn.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)

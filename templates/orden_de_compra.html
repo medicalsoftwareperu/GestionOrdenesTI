@@ -15,7 +15,7 @@
   <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">🏠</button>
   
   <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">💱 Moneda: Soles (S/)</button>
-  <button id="btn-igv-toggle" class="btn btn-igv" onclick="toggleIGV()">Precios INCLUYEN IGV</button>
+  <button id="btn-igv-toggle" class="btn btn-primary" onclick="toggleIGV()">Precios INCLUYEN IGV</button>
   <button class="btn btn-success" onclick="addRow()">＋ Agregar ítem</button>
   <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
   <button class="btn btn-outline" onclick="clearForm()">🗑 Limpiar todo</button>
@@ -79,7 +79,11 @@
   <div class="section-title">Datos Proveedor</div>
   <div class="provider-grid">
     <div class="provider-col">
-      <input class="provider-name-input" id="prov-nombre" placeholder="Nombre del proveedor">
+        <div style="position: relative; width: 100%;">
+          <input class="provider-name-input" id="prov-nombre" placeholder="Nombre del proveedor" autocomplete="off">
+          <div id="custom-dropdown" class="custom-dropdown"></div>
+        </div>
+      
       <div class="provider-row">
         <span class="lbl">R.U.C</span>
         <input class="field" id="prov-ruc" placeholder="RUC proveedor">
@@ -205,6 +209,79 @@
   document.getElementById('fecha').valueAsDate = new Date();
   document.getElementById('obs-fecha').valueAsDate = new Date();
 
+  // ── LÓGICA NUEVA: PROVEEDORES (BASE DE DATOS) ──
+
+// ── LÓGICA NUEVA: BUSCADOR ELEGANTE DE PROVEEDORES ──
+  let listaProveedores = [];
+  const inputProv = document.getElementById('prov-nombre');
+  const dropdownMenu = document.getElementById('custom-dropdown');
+
+  // Cargar datos al inicio
+  document.addEventListener('DOMContentLoaded', () => {
+    fetch('/get_proveedores')
+      .then(r => r.json())
+      .then(data => { listaProveedores = data; });
+  });
+
+  // Mostrar menú cuando escribes
+  inputProv.addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    dropdownMenu.innerHTML = ''; // Limpiar opciones anteriores
+    
+    if (!val) {
+      dropdownMenu.style.display = 'none';
+      return;
+    }
+
+    // Filtrar proveedores que coincidan con lo escrito
+    const filtrados = listaProveedores.filter(p => p.nombre.toLowerCase().includes(val));
+
+    if (filtrados.length > 0) {
+      dropdownMenu.style.display = 'block';
+      filtrados.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.textContent = p.nombre;
+        
+        // Al hacer clic en una opción
+        item.onclick = () => {
+          inputProv.value = p.nombre;
+          document.getElementById('prov-ruc').value = p.ruc;
+          document.getElementById('prov-dir').value = p.direccion;
+          document.getElementById('prov-contacto').value = p.contacto;
+          dropdownMenu.style.display = 'none'; // Ocultar menú
+        };
+        dropdownMenu.appendChild(item);
+      });
+    } else {
+      dropdownMenu.style.display = 'none';
+    }
+  });
+
+  // Ocultar menú si haces clic afuera
+  document.addEventListener('click', function(e) {
+    if (e.target !== inputProv) {
+      dropdownMenu.style.display = 'none';
+    }
+  });
+
+  async function registrarProv() {
+    const p = {
+      nombre: document.getElementById('prov-nombre').value,
+      ruc: document.getElementById('prov-ruc').value,
+      direccion: document.getElementById('prov-dir').value,
+      contacto: document.getElementById('prov-contacto').value
+    };
+    if (!p.nombre) return;
+    
+    await fetch('/guardar_proveedor', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(p)
+    });
+  }
+  // ── FIN LÓGICA NUEVA ──
+
   // ── Variables Globales ──
   let preciosConIGV = true; 
   let simboloMoneda = 'S/'; // Por defecto arranca en Soles
@@ -229,11 +306,11 @@
     const headerTotal = document.getElementById('col-total-header');
     
     if (preciosConIGV) {
-      btn.textContent = "✅ Precios INCLUYEN IGV";
-      btn.className = "btn btn-igv";
+      btn.textContent = "Precios INCLUYEN IGV";
+      btn.className = "btn btn-primary";
       headerTotal.textContent = "Total";
     } else {
-      btn.textContent = "☑️ Precios SIN IGV";
+      btn.textContent = "Precios SIN IGV";
       btn.className = "btn btn-outline";
       headerTotal.textContent = "Total sin IGV";
     }
@@ -241,10 +318,11 @@
   }
 
   // ── Initial rows ──
+// ── Initial rows ──
   const initialItems = [
-    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: 0},
-    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: 0},
-    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: 0},
+    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: ''}, // Cambiamos el 0 por '' (vacío)
+    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: ''},
+    { jira: '', desc: '', marca: '', modelo: '', qty: 1, unit: ''},
   ];
 
   function addRow(data = {}) {
@@ -255,8 +333,8 @@
       <td><input type="text" value="${data.desc||''}" placeholder="Descripción del ítem" oninput="recalc()"></td>
       <td class="num"><input type="text" value="${data.marca||''}" placeholder="Marca" oninput="recalc()"></td>
       <td class="num"><input type="text" value="${data.modelo||''}" placeholder="Modelo" oninput="recalc()"></td>
-      <td class="num"><input type="number" value="${data.qty||1}" min="0" oninput="recalc()"></td>
-      <td class="money"><input type="number" value="${data.unit||0}" min="0" step="0.01" oninput="recalc()"></td>
+      <td class="num"><input type="number" value="${data.qty !== undefined ? data.qty : 1}" min="0" oninput="recalc()"></td>
+      <td class="money"><input type="number" value="${data.unit !== undefined ? data.unit : ''}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
       <td class="total-cell">${simboloMoneda} 0.00</td>
       <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
     `;
@@ -307,8 +385,11 @@
   }
 
   // ── Lógica para Guardar PDF en Servidor ──
-  function guardarEnHistorial() {
+  async function guardarEnHistorial() { // SE AGREGO ASYNC AQUI
     if (!confirm('¿Deseas guardar esta Orden de Compra en el historial?')) return;
+
+    // SE AGREGO ESTA LINEA PARA GUARDAR EL PROVEEDOR ANTES DEL PDF
+    await registrarProv(); 
 
     // 1. Forzar el scroll hacia arriba para evitar recortes
     window.scrollTo(0, 0);
@@ -317,7 +398,7 @@
     const numeroOC = document.getElementById('oc-number').value || 'SinNumero';
     const nombreArchivo = `OC_${numeroOC}.pdf`;
 
-    // 2. Opciones mejoradas para html2pdf
+    // 2. Opciones mejoradas para html2pdf (MANTENIDAS EXACTAMENTE IGUAL)
     const opciones = {
       margin:       [10, 10, 10, 10], // Márgenes [arriba, izquierda, abajo, derecha] en mm
       filename:     nombreArchivo,
@@ -344,7 +425,7 @@
         if (datos.success) {
           alert('✅ ¡Guardado exitosamente en la carpeta historial!');
           // Esta línea mágica recarga la página para traer el nuevo número
-          window.location.reload(); 
+          //window.location.reload(); 
         } else {
           alert('❌ Error del servidor: ' + datos.message);
         }
