@@ -398,6 +398,20 @@
     const numeroOC = document.getElementById('oc-number').value || 'SinNumero';
     const nombreArchivo = `OC_${numeroOC}.pdf`;
 
+    // --- NUEVO: RECOLECTAMOS LOS ÍTEMS PARA EL BUSCADOR ---
+    const items = [];
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      // desc es inputs[1], marca es inputs[2], modelo es inputs[3]
+      if (inputs.length >= 4) {
+        items.push({
+          desc: inputs[1].value,
+          marca: inputs[2].value,
+          modelo: inputs[3].value
+        });
+      }
+    });
+
     // 2. Opciones mejoradas para html2pdf (MANTENIDAS EXACTAMENTE IGUAL)
     const opciones = {
       margin:       [10, 10, 10, 10], // Márgenes [arriba, izquierda, abajo, derecha] en mm
@@ -415,6 +429,8 @@
     html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
       const formData = new FormData();
       formData.append('pdf', pdfBlob, nombreArchivo);
+
+      formData.append('items', JSON.stringify(items));
 
       fetch('/guardar_pdf', {
         method: 'POST',

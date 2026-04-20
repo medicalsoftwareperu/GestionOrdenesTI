@@ -42,6 +42,25 @@
         }
         .btn-ver:hover { background: #143655; }
         .vacio { color: #999; font-style: italic; text-align: center; padding: 20px; }
+
+        /* --- NUEVOS ESTILOS PARA EL BUSCADOR --- */
+        .buscador-container {
+            padding: 0 20px;
+            margin-top: 20px;
+        }
+        .input-buscador {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-family: 'Barlow', sans-serif;
+            border: 2px solid var(--blue, #1a4971);
+            border-radius: 8px;
+            outline: none;
+            transition: box-shadow 0.2s;
+        }
+        .input-buscador:focus {
+            box-shadow: 0 0 8px rgba(26, 58, 92, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -49,6 +68,10 @@
 <div class="toolbar">
     <h1>🗄️ Historial de Documentos</h1>
     <button class="btn btn-outline" onclick="window.location.href='/'">🏠 Volver al Inicio</button>
+</div>
+
+<div class="buscador-container">
+    <input type="text" id="buscador" class="input-buscador" placeholder="🔍 Buscar por nombre de equipo, marca, modelo o fecha (ej. 'disco', 'lenovo', '2026')..." onkeyup="buscarEnHistorial()">
 </div>
 
 <div class="historial-container">
@@ -82,6 +105,35 @@
     </div>
 
 </div>
+
+<script>
+    async function buscarEnHistorial() {
+        const query = document.getElementById('buscador').value.toLowerCase();
+        const itemsUI = document.querySelectorAll('.archivo-item');
+        
+        // Si el buscador está vacío, mostramos todos los archivos
+        if (query.trim() === '') {
+            itemsUI.forEach(li => li.style.display = 'flex');
+            return;
+        }
+
+        // Le preguntamos a la Base de Datos qué PDFs contienen esa palabra
+        const res = await fetch('/buscar_archivos?q=' + encodeURIComponent(query));
+        const archivosValidos = await res.json(); 
+
+        // Filtramos visualmente la lista
+        itemsUI.forEach(li => {
+            const nombreArchivo = li.querySelector('.archivo-nombre').textContent.trim();
+            
+            // Mostrar si la BD dice que el PDF lo tiene adentro, OR si el nombre del archivo (ej. fecha) coincide
+            if (archivosValidos.includes(nombreArchivo) || nombreArchivo.toLowerCase().includes(query)) {
+                li.style.display = 'flex';
+            } else {
+                li.style.display = 'none';
+            }
+        });
+    }
+</script>
 
 </body>
 </html>
