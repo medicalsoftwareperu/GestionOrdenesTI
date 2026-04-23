@@ -249,6 +249,9 @@
           document.getElementById('prov-ruc').value = p.ruc;
           document.getElementById('prov-dir').value = p.direccion;
           document.getElementById('prov-contacto').value = p.contacto;
+          document.getElementById('prov-cta-soles').value = p.cuenta_soles || '';
+          document.getElementById('prov-cci').value = p.cci || '';
+          document.getElementById('prov-cta-dolares').value = p.cuenta_dolares || '';
           dropdownMenu.style.display = 'none'; // Ocultar menú
         };
         dropdownMenu.appendChild(item);
@@ -270,7 +273,10 @@
       nombre: document.getElementById('prov-nombre').value,
       ruc: document.getElementById('prov-ruc').value,
       direccion: document.getElementById('prov-dir').value,
-      contacto: document.getElementById('prov-contacto').value
+      contacto: document.getElementById('prov-contacto').value,
+      cuenta_soles: document.getElementById('prov-cta-soles').value,
+      cci: document.getElementById('prov-cci').value,
+      cuenta_dolares: document.getElementById('prov-cta-dolares').value
     };
     if (!p.nombre) return;
     

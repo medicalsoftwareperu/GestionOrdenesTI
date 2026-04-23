@@ -36,7 +36,9 @@ with get_db_connection() as conn:
             ruc TEXT,
             direccion TEXT,
             contacto TEXT,
-            telefono TEXT
+            cuenta_soles TEXT,      -- N° CTA. SOLES BCP
+            cci TEXT,               -- N° CCI BCP
+            cuenta_dolares TEXT     -- N° CTA. DÓLARES BCP
         )
     ''')
     conn.execute('''
@@ -160,9 +162,17 @@ def guardar_proveedor():
     try:
         with get_db_connection() as conn:
             conn.execute('''
-                INSERT OR REPLACE INTO proveedores (nombre, ruc, direccion, contacto, telefono)
-                VALUES (?, ?, ?, ?, ?)''', 
-                (data.get('nombre'), data.get('ruc'), data.get('direccion'), data.get('contacto'), data.get('telefono', '')))
+                INSERT OR REPLACE INTO proveedores (nombre, ruc, direccion, contacto, cuenta_soles, cci, cuenta_dolares)
+                VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                (
+                    data.get('nombre'), 
+                    data.get('ruc'), 
+                    data.get('direccion'), 
+                    data.get('contacto'), 
+                    data.get('cuenta_soles', ''),   
+                    data.get('cci', ''),            
+                    data.get('cuenta_dolares', '')
+                ))
             conn.commit()
         return jsonify({"success": True})
     except Exception as e:
