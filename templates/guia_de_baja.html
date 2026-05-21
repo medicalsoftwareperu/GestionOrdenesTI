@@ -224,6 +224,19 @@
     const numeroDoc = document.getElementById('baja-number').value || 'SinNumero';
     const nombreArchivo = `BAJA_${numeroDoc}.pdf`;
 
+    // --- RECOLECTAMOS LOS ÍTEMS PARA EL BUSCADOR Y EL HISTORIAL ---
+    const items = [];
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      if (inputs.length >= 5) {
+        items.push({
+          desc: inputs[1].value,
+          marca: inputs[4].value,
+          modelo: inputs[3].value
+        });
+      }
+    });
+
     const opciones = {
       margin:       [10, 10, 10, 10],
       filename:     nombreArchivo,
@@ -235,6 +248,7 @@
     html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
       const formData = new FormData();
       formData.append('pdf', pdfBlob, nombreArchivo);
+      formData.append('items', JSON.stringify(items));
 
       fetch('/guardar_pdf', {
         method: 'POST',
