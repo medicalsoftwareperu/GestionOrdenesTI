@@ -1,10 +1,16 @@
 import os
 import sqlite3
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session
 from datetime import datetime
 import json
 
 app = Flask(__name__)
+app.secret_key = 'gestion_ordenes_ti_secret_key'  # Para habilitar el uso de sesiones de Flask
+
+# Credenciales de inicio de sesión por defecto
+USER_CREDENTIALS = {
+    'admin': 'sistemas'
+}
 
 # --- CONFIGURACIÓN DE CARPETAS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -71,6 +77,44 @@ def incrementar_numero(archivo_txt):
 
 
 # --- RUTAS PRINCIPALES ---
+
+@app.before_request
+def verificar_autenticacion():
+    # Rutas públicas (no requieren login)
+    rutas_publicas = ['login', 'static']
+    
+    # Si no hay endpoint (ej. 404) o es ruta pública, permitir el acceso
+    if not request.endpoint or request.endpoint in rutas_publicas:
+        return
+        
+    # Si no ha iniciado sesión, redirigir al login
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    # Si ya está logueado, redirigir al index
+    if 'usuario' in session:
+        return redirect(url_for('index'))
+        
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+            session['usuario'] = username
+            return redirect(url_for('index'))
+        else:
+            error = 'Usuario o contraseña incorrectos.'
+            
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.pop('usuario', None)
+    return redirect(url_for('login'))
+
 @app.route('/')
 def index():
     return render_template('index.html')

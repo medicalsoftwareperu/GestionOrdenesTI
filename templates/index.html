@@ -9,6 +9,17 @@
 <body class="bg-light">
 
 <div class="container mt-5">
+    <!-- Barra de Usuario y Salida -->
+    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm border">
+        <div class="d-flex align-items-center">
+            <span class="fs-4 me-2">👤</span>
+            <span class="text-secondary">Conectado como: <strong class="text-primary">{{ session['usuario'] }}</strong></span>
+        </div>
+        <a href="/logout" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm">
+            <span>🚪</span> Cerrar Sesión
+        </a>
+    </div>
+
     <div class="row text-center mb-4">
         <div class="col">
             <h1 class="display-5 fw-bold text-primary">Panel de Gestión TI</h1>

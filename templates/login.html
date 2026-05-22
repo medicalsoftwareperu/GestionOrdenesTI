@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso al Sistema - Medical TI</title>
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-gradient: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0f172a 100%);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-focus-border: rgba(99, 102, 241, 0.5);
+            --accent-color: #6366f1;
+            --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient glowing blobs in the background */
+        .blob {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: 0;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .blob-1 {
+            background: #4f46e5;
+            top: -100px;
+            left: -100px;
+            animation: float 20s infinite alternate;
+        }
+        .blob-2 {
+            background: #0ea5e9;
+            bottom: -100px;
+            right: -100px;
+            animation: float 15s infinite alternate-reverse;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, 30px) scale(1.1); }
+        }
+
+        .login-container {
+            z-index: 10;
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+
+        /* Glassmorphic Card */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 45px 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: all 0.4s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 30px 60px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .brand-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .brand-logo img {
+            max-height: 50px;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+            object-fit: contain;
+        }
+
+        .brand-title {
+            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 400;
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        /* Glassmorphic Form Fields */
+        .form-label {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group-glass {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .form-control-glass {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary) !important;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-weight: 400;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            outline: none;
+        }
+
+        .form-control-glass::placeholder {
+            color: rgba(148, 163, 184, 0.5);
+        }
+
+        .form-control-glass:focus {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: var(--glass-focus-border);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        /* Custom Elegant Button */
+        .btn-submit-premium {
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 14px;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4), 0 0 10px rgba(6, 182, 212, 0.2);
+            filter: brightness(1.1);
+        }
+
+        .btn-submit-premium:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(79, 70, 229, 0.3);
+        }
+
+        /* Beautiful Custom Error Alert */
+        .alert-premium {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+            color: #fca5a5;
+            font-size: 14px;
+            padding: 12px 16px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Subtle copyright footer */
+        .footer-copyright {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-align: center;
+            margin-top: 30px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Decorative floating background elements -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="login-container">
+        <div class="glass-card">
+            
+            <!-- Brand Logo / Fallback Icon -->
+            <div class="brand-logo">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Medical Logo" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='block';">
+                <div id="logo-fallback" style="display:none; font-size: 40px; margin-bottom: 10px;">🏢</div>
+            </div>
+
+            <!-- Header Titles -->
+            <h2 class="brand-title">Gestión de Órdenes TI</h2>
+            <div class="brand-subtitle">Ingresa tus credenciales para continuar</div>
+
+            <!-- Error Banner -->
+            {% if error %}
+            <div class="alert-premium">
+                <span>⚠️</span>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form action="/login" method="POST" autocomplete="off">
+                <div class="input-group-glass">
+                    <label for="username" class="form-label">USUARIO</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        class="form-control-glass" 
+                        placeholder="Ingresa tu usuario" 
+                        required
+                        autofocus
+                    >
+                </div>
+
+                <div class="input-group-glass">
+                    <label for="password" class="form-label">CONTRASEÑA</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-control-glass" 
+                        placeholder="••••••••" 
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-submit-premium mt-2">
+                    Iniciar Sesión
+                </button>
+            </form>
+        </div>
+
+        <div class="footer-copyright">
+            &copy; 2026 Medical S.A. | Todos los derechos reservados.
+        </div>
+    </div>
+
+</body>
+</html>
