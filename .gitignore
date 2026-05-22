@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+instance/
+.pytest_cache/
+.vscode/
+.idea/
+database.db
+contador_oc.txt
+contador_baja.txt
+historial/

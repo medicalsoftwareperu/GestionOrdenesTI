@@ -4,12 +4,24 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 from datetime import datetime
 import json
 
-app = Flask(__name__)
-app.secret_key = 'gestion_ordenes_ti_secret_key'  # Para habilitar el uso de sesiones de Flask
+# Intentar cargar variables de entorno desde un archivo .env local
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
-# Credenciales de inicio de sesión por defecto
+app = Flask(__name__)
+
+# Configurar la clave secreta desde variables de entorno
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'gestion_ordenes_ti_secret_key')
+
+# Credenciales de inicio de sesión leídas de forma segura desde variables de entorno
+TI_USER = os.getenv('TI_USERNAME', 'admin')
+TI_PASS = os.getenv('TI_PASSWORD', 'sistemas')
+
 USER_CREDENTIALS = {
-    'admin': 'sistemas'
+    TI_USER: TI_PASS
 }
 
 # --- CONFIGURACIÓN DE CARPETAS ---
