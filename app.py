@@ -4,12 +4,19 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 from datetime import datetime
 import json
 
-# Intentar cargar variables de entorno desde un archivo .env local
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+# Intentar cargar variables de entorno desde un archivo .env local de forma manual (sin dependencias de pip)
+ruta_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.exists(ruta_env):
+    try:
+        with open(ruta_env, 'r', encoding='utf-8') as f:
+            for linea in f:
+                linea = linea.strip()
+                # Ignorar líneas vacías y comentarios
+                if linea and not linea.startswith('#') and '=' in linea:
+                    clave, valor = linea.split('=', 1)
+                    os.environ[clave.strip()] = valor.strip()
+    except Exception as e:
+        print("Error leyendo el archivo .env:", e)
 
 app = Flask(__name__)
 
