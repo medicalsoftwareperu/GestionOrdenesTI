@@ -37,9 +37,13 @@ CARPETA_HISTORIAL = os.path.join(BASE_DIR, 'historial')
 
 CARPETA_COMPRAS = os.path.join(CARPETA_HISTORIAL, 'compras')
 CARPETA_BAJAS = os.path.join(CARPETA_HISTORIAL, 'bajas')
+CARPETA_COMPRAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'compras_editadas')
+CARPETA_BAJAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'bajas_editadas')
 
 os.makedirs(CARPETA_COMPRAS, exist_ok=True)
 os.makedirs(CARPETA_BAJAS, exist_ok=True)
+os.makedirs(CARPETA_COMPRAS_EDITADAS, exist_ok=True)
+os.makedirs(CARPETA_BAJAS_EDITADAS, exist_ok=True)
 
 ARCHIVO_CONTADOR = os.path.join(BASE_DIR, 'contador_oc.txt')
 ARCHIVO_CONTADOR_BAJA = os.path.join(BASE_DIR, 'contador_baja.txt')
@@ -239,9 +243,17 @@ def ver_pdf(tipo, nombre):
 def get_metadata(tipo, nombre):
     json_nombre = nombre.replace('.pdf', '.json')
     if tipo == 'compras':
-        ruta = os.path.join(CARPETA_COMPRAS, json_nombre)
+        ruta_editada = os.path.join(CARPETA_COMPRAS_EDITADAS, json_nombre)
+        if os.path.exists(ruta_editada):
+            ruta = ruta_editada
+        else:
+            ruta = os.path.join(CARPETA_COMPRAS, json_nombre)
     elif tipo == 'bajas':
-        ruta = os.path.join(CARPETA_BAJAS, json_nombre)
+        ruta_editada = os.path.join(CARPETA_BAJAS_EDITADAS, json_nombre)
+        if os.path.exists(ruta_editada):
+            ruta = ruta_editada
+        else:
+            ruta = os.path.join(CARPETA_BAJAS, json_nombre)
     else:
         return jsonify({'success': False, 'message': 'Tipo no válido'}), 400
     
@@ -269,12 +281,16 @@ def guardar_pdf():
         return jsonify({'success': False, 'message': 'Nombre de archivo vacío'})
 
     if nombre_archivo.startswith('OC_'):
-        ruta_guardado = os.path.join(CARPETA_COMPRAS, nombre_archivo)
-        if not edit_mode:
+        if edit_mode:
+            ruta_guardado = os.path.join(CARPETA_COMPRAS_EDITADAS, nombre_archivo)
+        else:
+            ruta_guardado = os.path.join(CARPETA_COMPRAS, nombre_archivo)
             incrementar_numero('compras')
     elif nombre_archivo.startswith('BAJA_'):
-        ruta_guardado = os.path.join(CARPETA_BAJAS, nombre_archivo)
-        if not edit_mode:
+        if edit_mode:
+            ruta_guardado = os.path.join(CARPETA_BAJAS_EDITADAS, nombre_archivo)
+        else:
+            ruta_guardado = os.path.join(CARPETA_BAJAS, nombre_archivo)
             incrementar_numero('bajas')
     else:
         ruta_guardado = os.path.join(CARPETA_HISTORIAL, nombre_archivo)
