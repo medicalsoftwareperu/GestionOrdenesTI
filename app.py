@@ -90,28 +90,60 @@ with get_db_connection() as conn:
         INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
         VALUES (?, ?, ?)
     ''', ('ONCO TEST S.A.C.', '20547642512', 'Av. Gral Alvarez de Arenales Nro. 630'))
+    
+    # Crear e inicializar tabla de contadores
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS contadores (
+            tipo TEXT PRIMARY KEY,
+            valor INTEGER
+        )
+    ''')
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM contadores')
+    if cursor.fetchone()[0] == 0:
+        val_compras = 1
+        if os.path.exists(ARCHIVO_CONTADOR):
+            try:
+                with open(ARCHIVO_CONTADOR, 'r') as f:
+                    val_compras = int(f.read().strip())
+            except Exception:
+                pass
+        conn.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('compras', val_compras))
+        
+        val_bajas = 1
+        if os.path.exists(ARCHIVO_CONTADOR_BAJA):
+            try:
+                with open(ARCHIVO_CONTADOR_BAJA, 'r') as f:
+                    val_bajas = int(f.read().strip())
+            except Exception:
+                pass
+        conn.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('bajas', val_bajas))
     conn.commit()
 
 
 
 # --- LÓGICA DE CONTADORES ---
-def obtener_siguiente_numero(archivo_txt):
-    if not os.path.exists(archivo_txt):
-        with open(archivo_txt, 'w') as f:
-            f.write('1')
-        return 1
-    with open(archivo_txt, 'r') as f:
-        numero = f.read().strip()
-        if not numero:
-            return 1
-        return int(numero)
+def obtener_siguiente_numero(tipo):
+    conn = get_db_connection()
+    row = conn.execute('SELECT valor FROM contadores WHERE tipo = ?', (tipo,)).fetchone()
+    conn.close()
+    if row:
+        return row['valor']
+    return 1
 
-def incrementar_numero(archivo_txt):
-    actual = obtener_siguiente_numero(archivo_txt)
-    nuevo = actual + 1
-    with open(archivo_txt, 'w') as f:
-        f.write(str(nuevo))
-    return nuevo
+def incrementar_numero(tipo):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT valor FROM contadores WHERE tipo = ?', (tipo,))
+        row = cursor.fetchone()
+        if row:
+            nuevo = row[0] + 1
+            conn.execute('UPDATE contadores SET valor = ? WHERE tipo = ?', (nuevo, tipo))
+        else:
+            nuevo = 2
+            conn.execute('INSERT INTO contadores (tipo, valor) VALUES (?, ?)', (tipo, nuevo))
+        conn.commit()
+        return nuevo
 
 
 # --- RUTAS PRINCIPALES ---
@@ -164,7 +196,7 @@ def compras():
         numero_oc = edit.replace('OC_', '').replace('.pdf', '')
         return render_template('orden_de_compra.html', numero_oc=numero_oc, edit_mode=True, edit_filename=edit)
     
-    numero_actual = obtener_siguiente_numero(ARCHIVO_CONTADOR)
+    numero_actual = obtener_siguiente_numero('compras')
     fecha_hoy = datetime.now().strftime('%Y%m%d')
     numero_formateado = f"{fecha_hoy}-{numero_actual:04d}" 
     return render_template('orden_de_compra.html', numero_oc=numero_formateado, edit_mode=False, edit_filename='')
@@ -176,7 +208,7 @@ def bajas():
         numero_baja = edit.replace('BAJA_', '').replace('.pdf', '')
         return render_template('guia_de_baja.html', numero_baja=numero_baja, edit_mode=True, edit_filename=edit)
         
-    numero_actual = obtener_siguiente_numero(ARCHIVO_CONTADOR_BAJA)
+    numero_actual = obtener_siguiente_numero('bajas')
     fecha_hoy = datetime.now().strftime('%Y%m%d')
     numero_formateado = f"{fecha_hoy}-{numero_actual:04d}" 
     return render_template('guia_de_baja.html', numero_baja=numero_formateado, edit_mode=False, edit_filename='')
@@ -239,11 +271,11 @@ def guardar_pdf():
     if nombre_archivo.startswith('OC_'):
         ruta_guardado = os.path.join(CARPETA_COMPRAS, nombre_archivo)
         if not edit_mode:
-            incrementar_numero(ARCHIVO_CONTADOR)
+            incrementar_numero('compras')
     elif nombre_archivo.startswith('BAJA_'):
         ruta_guardado = os.path.join(CARPETA_BAJAS, nombre_archivo)
         if not edit_mode:
-            incrementar_numero(ARCHIVO_CONTADOR_BAJA)
+            incrementar_numero('bajas')
     else:
         ruta_guardado = os.path.join(CARPETA_HISTORIAL, nombre_archivo)
     
