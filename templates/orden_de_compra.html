@@ -229,11 +229,11 @@
 
   // Cargar datos al inicio
   document.addEventListener('DOMContentLoaded', () => {
-    fetch('/get_proveedores')
+    fetch('/get_proveedores?_=' + Date.now())
       .then(r => r.json())
       .then(data => { 
         listaProveedores = data;
-        return fetch('/get_mis_empresas');
+        return fetch('/get_mis_empresas?_=' + Date.now());
       })
       .then(r => r.json())
       .then(data => {
