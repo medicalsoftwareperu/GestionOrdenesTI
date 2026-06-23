@@ -10,14 +10,19 @@
 
 <div class="container mt-5">
     <!-- Barra de Usuario y Salida -->
-    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm border">
+    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-body-tertiary rounded shadow-sm border">
         <div class="d-flex align-items-center">
             <span class="fs-4 me-2">👤</span>
             <span class="text-secondary">Conectado como: <strong class="text-primary">{{ session['usuario'] }}</strong></span>
         </div>
-        <a href="/logout" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm">
-            <span>🚪</span> Cerrar Sesión
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-1" id="btn-theme-toggle" onclick="toggleGlobalTheme()">
+                <span>🌙</span> Modo Oscuro
+            </button>
+            <a href="/logout" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm">
+                <span>🚪</span> Cerrar Sesión
+            </a>
+        </div>
     </div>
 
     <div class="row text-center mb-4">
@@ -60,5 +65,31 @@
     </div>
 </div>
 
+<script>
+    // Inicializar tema al cargar la página
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-bs-theme', currentTheme);
+    actualizarBotonTema(currentTheme);
+
+    function toggleGlobalTheme() {
+        const activeTheme = document.documentElement.getAttribute('data-bs-theme');
+        const newTheme = activeTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-bs-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        actualizarBotonTema(newTheme);
+    }
+
+    function actualizarBotonTema(theme) {
+        const btn = document.getElementById('btn-theme-toggle');
+        if (!btn) return;
+        if (theme === 'dark') {
+            btn.innerHTML = '<span>☀️</span> Modo Claro';
+            btn.className = 'btn btn-outline-warning btn-sm shadow-sm d-flex align-items-center gap-1';
+        } else {
+            btn.innerHTML = '<span>🌙</span> Modo Oscuro';
+            btn.className = 'btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-1';
+        }
+    }
+</script>
 </body>
 </html>

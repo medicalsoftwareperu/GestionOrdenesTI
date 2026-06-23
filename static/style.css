@@ -12,16 +12,39 @@
     --text-muted: #5a6a7a;
     --white: #ffffff;
     --green: #27ae60;
+
+    --bg-body: #e8ecf0;
+    --input-focus-bg: #e8f4fd;
+    --dropdown-bg: #ffffff;
+    --shadow-color: rgba(0,0,0,.12);
+  }
+
+  [data-theme="dark"] {
+    --blue: #4fa3d1;
+    --blue-light: #2980b9;
+    --gray-light: #1f2937;
+    --gray-mid: #374151;
+    --gray-border: #4b5563;
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
+    --white: #111827; 
+    --green: #2ecc71;
+
+    --bg-body: #030712;
+    --input-focus-bg: #1e293b;
+    --dropdown-bg: #1f2937;
+    --shadow-color: rgba(0,0,0,.5);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     font-family: 'Barlow', sans-serif;
-    background: #e8ecf0;
+    background: var(--bg-body);
     color: var(--text);
     min-height: 100vh;
     padding: 20px;
+    transition: background 0.3s ease, color 0.3s ease;
   }
 
   /* ── TOOLBAR ── */
@@ -66,8 +89,9 @@
     margin: 0 auto;
     background: var(--white);
     border-radius: 10px;
-    box-shadow: 0 4px 24px rgba(0,0,0,.12);
+    box-shadow: 0 4px 24px var(--shadow-color);
     overflow: hidden;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
   }
 
   /* ── HEADER ── */
@@ -304,7 +328,7 @@
     padding: 3px 4px;
     text-align: inherit;
   }
-  table.items-table tbody td input:focus { background: #e8f4fd; border-radius: 3px; }
+  table.items-table tbody td input:focus { background: var(--input-focus-bg); border-radius: 3px; }
   table.items-table tbody td.num input { text-align: center; }
   table.items-table tbody td.money input { text-align: right; }
   table.items-table tbody td.total-cell { text-align: right; font-weight: 600; color: var(--blue); padding-right: 10px; }
@@ -410,10 +434,10 @@
     top: 100%;
     left: 0;
     width: 100%;
-    background: white;
+    background: var(--dropdown-bg);
     border: 1px solid var(--gray-mid);
     border-radius: 0 0 6px 6px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 16px var(--shadow-color);
     max-height: 200px;
     overflow-y: auto;
     z-index: 1000;
@@ -424,8 +448,8 @@
     cursor: pointer;
     font-family: 'Barlow', sans-serif;
     font-size: 14px;
-    color: var(--blue);
-    border-bottom: 1px solid #eee;
+    color: var(--text);
+    border-bottom: 1px solid var(--gray-mid);
     text-align: left;
   }
   .dropdown-item:last-child { border-bottom: none; }

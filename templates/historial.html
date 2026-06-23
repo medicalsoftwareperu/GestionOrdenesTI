@@ -12,10 +12,11 @@
             padding: 20px;
         }
         .columna-historial {
-            background: white;
+            background: var(--white);
             border-radius: 8px;
             padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px var(--shadow-color);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
         .lista-archivos {
             list-style: none;
@@ -27,11 +28,11 @@
             justify-content: space-between;
             align-items: center;
             padding: 10px;
-            border-bottom: 1px solid #eee;
-            transition: background 0.2s;
+            border-bottom: 1px solid var(--gray-mid);
+            transition: background 0.2s, border-color 0.3s;
         }
-        .archivo-item:hover { background: #f9f9f9; }
-        .archivo-nombre { font-family: monospace; font-size: 14px; color: #333; }
+        .archivo-item:hover { background: var(--gray-light); }
+        .archivo-nombre { font-family: monospace; font-size: 14px; color: var(--text); transition: color 0.3s; }
         .btn-ver {
             text-decoration: none;
             background: #1a4971;
@@ -54,9 +55,11 @@
             font-size: 16px;
             font-family: 'Barlow', sans-serif;
             border: 2px solid var(--blue, #1a4971);
+            background: var(--white);
+            color: var(--text);
             border-radius: 8px;
             outline: none;
-            transition: box-shadow 0.2s;
+            transition: box-shadow 0.2s, background 0.3s, color 0.3s;
         }
         .input-buscador:focus {
             box-shadow: 0 0 8px rgba(26, 58, 92, 0.3);
@@ -67,6 +70,7 @@
 
 <div class="toolbar">
     <h1>🗄️ Historial de Documentos</h1>
+    <button class="btn btn-outline" id="btn-theme-toggle" onclick="toggleGlobalTheme()" style="margin-right: 5px;">🌙 Modo Oscuro</button>
     <button class="btn btn-outline" onclick="window.location.href='/'">🏠 Volver al Inicio</button>
 </div>
 
@@ -141,5 +145,29 @@
     }
 </script>
 
+<script>
+    // Inicializar tema al cargar la página
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    actualizarBotonTema(currentTheme);
+
+    function toggleGlobalTheme() {
+        const activeTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = activeTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        actualizarBotonTema(newTheme);
+    }
+
+    function actualizarBotonTema(theme) {
+        const btn = document.getElementById('btn-theme-toggle');
+        if (!btn) return;
+        if (theme === 'dark') {
+            btn.innerHTML = '☀️ Modo Claro';
+        } else {
+            btn.innerHTML = '🌙 Modo Oscuro';
+        }
+    }
+</script>
 </body>
 </html>
