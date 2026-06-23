@@ -43,7 +43,10 @@
       <span class="lbl">Razón Social:</span>
     </div>
     <div class="data-cell span-2">
-      <input class="field" id="razon-social" value="MEDICAL DENT DIGITAL" placeholder="Razón social">
+      <div style="position: relative; width: 100%;">
+        <input class="field" id="razon-social" value="MEDICAL DENT DIGITAL" placeholder="Razón social" autocomplete="off">
+        <div id="mi-empresa-dropdown" class="custom-dropdown"></div>
+      </div>
     </div>
     <div class="data-cell" style="gap:4px">
       <span class="lbl">R.U.C.:</span>
@@ -214,12 +217,15 @@
     document.getElementById('obs-fecha').valueAsDate = new Date();
   }
 
-  // ── LÓGICA NUEVA: PROVEEDORES (BASE DE DATOS) ──
+  // ── LÓGICA NUEVA: PROVEEDORES Y MIS EMPRESAS (BASE DE DATOS) ──
 
-// ── LÓGICA NUEVA: BUSCADOR ELEGANTE DE PROVEEDORES ──
   let listaProveedores = [];
   const inputProv = document.getElementById('prov-nombre');
   const dropdownMenu = document.getElementById('custom-dropdown');
+
+  let listaMisEmpresas = [];
+  const inputEmpresa = document.getElementById('razon-social');
+  const dropdownEmpresa = document.getElementById('mi-empresa-dropdown');
 
   // Cargar datos al inicio
   document.addEventListener('DOMContentLoaded', () => {
@@ -227,6 +233,11 @@
       .then(r => r.json())
       .then(data => { 
         listaProveedores = data;
+        return fetch('/get_mis_empresas');
+      })
+      .then(r => r.json())
+      .then(data => {
+        listaMisEmpresas = data;
         if (EDIT_MODE) {
           cargarMetadatosDeEdicion();
         }
@@ -352,10 +363,53 @@
     }
   });
 
-  // Ocultar menú si haces clic afuera
+  // ── LÓGICA DE DROPDOWN PARA MIS EMPRESAS ──
+  function renderizarDropdownEmpresas(filtro = '') {
+    dropdownEmpresa.innerHTML = '';
+    const filtradas = listaMisEmpresas.filter(e => 
+      e.razon_social.toLowerCase().includes(filtro.toLowerCase())
+    );
+
+    if (filtradas.length > 0) {
+      dropdownEmpresa.style.display = 'block';
+      filtradas.forEach(e => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.textContent = e.razon_social;
+        
+        item.onclick = (event) => {
+          event.stopPropagation();
+          inputEmpresa.value = e.razon_social;
+          document.getElementById('ruc').value = e.ruc || '';
+          document.getElementById('direccion').value = e.direccion || '';
+          dropdownEmpresa.style.display = 'none';
+        };
+        dropdownEmpresa.appendChild(item);
+      });
+    } else {
+      dropdownEmpresa.style.display = 'none';
+    }
+  }
+
+  // Desplegar al hacer click, enfocar o escribir
+  inputEmpresa.addEventListener('focus', function() {
+    renderizarDropdownEmpresas(this.value);
+  });
+  inputEmpresa.addEventListener('click', function(e) {
+    e.stopPropagation();
+    renderizarDropdownEmpresas(this.value);
+  });
+  inputEmpresa.addEventListener('input', function() {
+    renderizarDropdownEmpresas(this.value);
+  });
+
+  // Ocultar menús si haces clic afuera
   document.addEventListener('click', function(e) {
     if (e.target !== inputProv) {
       dropdownMenu.style.display = 'none';
+    }
+    if (e.target !== inputEmpresa) {
+      dropdownEmpresa.style.display = 'none';
     }
   });
 

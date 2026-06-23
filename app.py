@@ -73,6 +73,28 @@ with get_db_connection() as conn:
             contenido TEXT
         )
     ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS mis_empresas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            razon_social TEXT UNIQUE,
+            ruc TEXT,
+            direccion TEXT
+        )
+    ''')
+    # Insertar valores por defecto si la tabla está vacía
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM mis_empresas')
+    if cursor.fetchone()[0] == 0:
+        conn.execute('''
+            INSERT INTO mis_empresas (razon_social, ruc, direccion)
+            VALUES (?, ?, ?)
+        ''', ('MEDICAL DENT DIGITAL', '20553850330', 'AV. ARENALES NRO. 630 LIMA - LIMA - JESUS MARIA'))
+        conn.execute('''
+            INSERT INTO mis_empresas (razon_social, ruc, direccion)
+            VALUES (?, ?, ?)
+        ''', ('ONCO TEST S.A.C.', '20547642512', 'Av. Gral Alvarez de Arenales Nro. 630'))
+        conn.commit()
+
 
 
 # --- LÓGICA DE CONTADORES ---
@@ -238,6 +260,22 @@ def guardar_pdf():
             metadata_dict = json.loads(metadata_json)
             with open(ruta_json, 'w', encoding='utf-8') as f:
                 json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
+
+            # Guardar automáticamente la Razón Social del emisor si es una Orden de Compra
+            if nombre_archivo.startswith('OC_'):
+                razon_social = metadata_dict.get('razon_social')
+                ruc = metadata_dict.get('ruc')
+                direccion = metadata_dict.get('direccion')
+                if razon_social and razon_social.strip():
+                    try:
+                        with get_db_connection() as conn:
+                            conn.execute('''
+                                INSERT OR REPLACE INTO mis_empresas (razon_social, ruc, direccion)
+                                VALUES (?, ?, ?)
+                            ''', (razon_social.strip(), (ruc or '').strip(), (direccion or '').strip()))
+                            conn.commit()
+                    except Exception as db_err:
+                        print("Error guardando mi empresa automáticamente:", db_err)
         except Exception as e:
             print("Error al guardar metadatos:", e)
 
@@ -260,6 +298,13 @@ def guardar_pdf():
 
 
 # --- RUTAS DE BASE DE DATOS ---
+@app.route('/get_mis_empresas')
+def get_mis_empresas():
+    conn = get_db_connection()
+    empresas = conn.execute('SELECT * FROM mis_empresas ORDER BY razon_social ASC').fetchall()
+    conn.close()
+    return jsonify([dict(e) for e in empresas])
+
 @app.route('/get_proveedores')
 def get_proveedores():
     conn = get_db_connection()
