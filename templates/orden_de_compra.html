@@ -393,14 +393,14 @@
 
   // Desplegar al hacer click, enfocar o escribir
   inputEmpresa.addEventListener('focus', function() {
-    renderizarDropdownEmpresas(this.value);
+    renderizarDropdownEmpresas(''); // Mostrar toda la lista al enfocar
   });
   inputEmpresa.addEventListener('click', function(e) {
     e.stopPropagation();
-    renderizarDropdownEmpresas(this.value);
+    renderizarDropdownEmpresas(''); // Mostrar toda la lista al hacer clic
   });
   inputEmpresa.addEventListener('input', function() {
-    renderizarDropdownEmpresas(this.value);
+    renderizarDropdownEmpresas(this.value); // Filtrar solo cuando el usuario escribe
   });
 
   // Ocultar menús si haces clic afuera
