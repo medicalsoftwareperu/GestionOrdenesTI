@@ -140,27 +140,35 @@ def index():
 
 @app.route('/compras')
 def compras():
+    edit = request.args.get('edit', '')
+    if edit:
+        return render_template('orden_de_compra.html', numero_oc='', edit_mode=True, edit_filename=edit)
+    
     numero_actual = obtener_siguiente_numero(ARCHIVO_CONTADOR)
     fecha_hoy = datetime.now().strftime('%Y%m%d')
     numero_formateado = f"{fecha_hoy}-{numero_actual:04d}" 
-    return render_template('orden_de_compra.html', numero_oc=numero_formateado)
+    return render_template('orden_de_compra.html', numero_oc=numero_formateado, edit_mode=False, edit_filename='')
 
 @app.route('/bajas')
 def bajas():
+    edit = request.args.get('edit', '')
+    if edit:
+        return render_template('guia_de_baja.html', numero_baja='', edit_mode=True, edit_filename=edit)
+        
     numero_actual = obtener_siguiente_numero(ARCHIVO_CONTADOR_BAJA)
     fecha_hoy = datetime.now().strftime('%Y%m%d')
     numero_formateado = f"{fecha_hoy}-{numero_actual:04d}" 
-    return render_template('guia_de_baja.html', numero_baja=numero_formateado)
+    return render_template('guia_de_baja.html', numero_baja=numero_formateado, edit_mode=False, edit_filename='')
 
 @app.route('/historial')
 def historial():
     archivos_compras = []
     if os.path.exists(CARPETA_COMPRAS):
-        archivos_compras = sorted(os.listdir(CARPETA_COMPRAS), reverse=True)
+        archivos_compras = sorted([f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')], reverse=True)
 
     archivos_bajas = []
     if os.path.exists(CARPETA_BAJAS):
-        archivos_bajas = sorted(os.listdir(CARPETA_BAJAS), reverse=True)
+        archivos_bajas = sorted([f for f in os.listdir(CARPETA_BAJAS) if f.endswith('.pdf')], reverse=True)
 
     return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas)
 
@@ -174,6 +182,26 @@ def ver_pdf(tipo, nombre):
         return send_from_directory(CARPETA_BAJAS, nombre)
     return "Archivo no encontrado", 404
 
+@app.route('/get_metadata/<tipo>/<nombre>')
+def get_metadata(tipo, nombre):
+    json_nombre = nombre.replace('.pdf', '.json')
+    if tipo == 'compras':
+        ruta = os.path.join(CARPETA_COMPRAS, json_nombre)
+    elif tipo == 'bajas':
+        ruta = os.path.join(CARPETA_BAJAS, json_nombre)
+    else:
+        return jsonify({'success': False, 'message': 'Tipo no válido'}), 400
+    
+    if os.path.exists(ruta):
+        try:
+            with open(ruta, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            return jsonify({'success': True, 'data': data})
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Error al leer los metadatos: {str(e)}'}), 500
+    else:
+        return jsonify({'success': False, 'message': 'No se encontraron metadatos para este archivo'}), 404
+
 @app.route('/guardar_pdf', methods=['POST'])
 def guardar_pdf():
     if 'pdf' not in request.files:
@@ -181,34 +209,52 @@ def guardar_pdf():
 
     archivo_pdf = request.files['pdf']
     nombre_archivo = archivo_pdf.filename
+    edit_mode = request.form.get('edit_mode', 'false') == 'true'
+    metadata_json = request.form.get('metadata', '')
 
     if nombre_archivo == '':
         return jsonify({'success': False, 'message': 'Nombre de archivo vacío'})
 
     if nombre_archivo.startswith('OC_'):
         ruta_guardado = os.path.join(CARPETA_COMPRAS, nombre_archivo)
-        incrementar_numero(ARCHIVO_CONTADOR)
+        if not edit_mode:
+            incrementar_numero(ARCHIVO_CONTADOR)
     elif nombre_archivo.startswith('BAJA_'):
         ruta_guardado = os.path.join(CARPETA_BAJAS, nombre_archivo)
-        incrementar_numero(ARCHIVO_CONTADOR_BAJA)
+        if not edit_mode:
+            incrementar_numero(ARCHIVO_CONTADOR_BAJA)
     else:
         ruta_guardado = os.path.join(CARPETA_HISTORIAL, nombre_archivo)
     
+    # Guardar PDF
     archivo_pdf.save(ruta_guardado)
 
+    # Guardar JSON de Metadatos
+    if metadata_json:
+        ruta_json = ruta_guardado.replace('.pdf', '.json')
+        try:
+            metadata_dict = json.loads(metadata_json)
+            with open(ruta_json, 'w', encoding='utf-8') as f:
+                json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print("Error al guardar metadatos:", e)
+
+    # Guardar/Actualizar términos de búsqueda
     items_json = request.form.get('items', '[]')
     try:
         items = json.loads(items_json)
         texto_busqueda = " ".join([f"{i.get('desc','')} {i.get('marca','')} {i.get('modelo','')}" for i in items]).lower()
         
-        if texto_busqueda.strip():
-            with get_db_connection() as conn:
+        with get_db_connection() as conn:
+            if edit_mode:
+                conn.execute('DELETE FROM items_pdf WHERE nombre_archivo = ?', (nombre_archivo,))
+            if texto_busqueda.strip():
                 conn.execute('INSERT INTO items_pdf (nombre_archivo, contenido) VALUES (?, ?)', (nombre_archivo, texto_busqueda))
-                conn.commit()
+            conn.commit()
     except Exception as e:
         print("Error procesando items:", e)
 
-    return jsonify({'success': True, 'message': f'PDF guardado en su carpeta correspondiente'})
+    return jsonify({'success': True, 'message': 'Documento guardado exitosamente'})
 
 
 # --- RUTAS DE BASE DE DATOS ---

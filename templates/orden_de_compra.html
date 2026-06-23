@@ -158,19 +158,19 @@
   <div class="data-grid cols-4" style="border-bottom:none;">
     <div class="data-cell span-2" style="gap:4px">
       <span class="lbl">Encargado:</span>
-      <input class="field" value="FABRICIO DEL AGUILA">
+      <input class="field" id="obs-encargado" value="FABRICIO DEL AGUILA">
     </div>
     <div class="data-cell span-2" style="gap:4px">
       <span class="lbl">DNI:</span>
-      <input class="field" value="72035278">
+      <input class="field" id="obs-dni" value="72035278">
     </div>
     <div class="data-cell span-2" style="gap:4px">
       <span class="lbl">Sede:</span>
-      <input class="field" value="Arenales">
+      <input class="field" id="obs-sede" value="Arenales">
     </div>
     <div class="data-cell span-2" style="gap:4px">
       <span class="lbl">Almacén:</span>
-      <input class="field" value="Oficina Sistemas">
+      <input class="field" id="obs-almacen" value="Oficina Sistemas">
     </div>
     <div class="data-cell span-4" style="gap:4px">
       <span class="lbl">Fecha:</span>
@@ -182,12 +182,12 @@
     <div class="sig-box">
       <div class="sig-line"></div>
       <input class="sig-label" value="SISTEMAS" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none;">
-      <input class="sig-name-input" value="FABRICIO DEL AGUILA">
+      <input class="sig-name-input" id="sig-sistemas-name" value="FABRICIO DEL AGUILA">
     </div>
     <div class="sig-box">
       <div class="sig-line"></div>
       <input class="sig-label" value="GERENTE CORPORATIVO" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none;">
-      <input class="sig-name-input" value="RICARDO INGA">
+      <input class="sig-name-input" id="sig-gerente-name" value="RICARDO INGA">
     </div>
   </div>
 
@@ -205,9 +205,14 @@
 </div>
 
 <script>
+  const EDIT_MODE = {{ 'true' if edit_mode else 'false' }};
+  const EDIT_FILENAME = "{{ edit_filename }}";
+
   // ── Set today's dates ──
-  document.getElementById('fecha').valueAsDate = new Date();
-  document.getElementById('obs-fecha').valueAsDate = new Date();
+  if (!EDIT_MODE) {
+    document.getElementById('fecha').valueAsDate = new Date();
+    document.getElementById('obs-fecha').valueAsDate = new Date();
+  }
 
   // ── LÓGICA NUEVA: PROVEEDORES (BASE DE DATOS) ──
 
@@ -220,8 +225,94 @@
   document.addEventListener('DOMContentLoaded', () => {
     fetch('/get_proveedores')
       .then(r => r.json())
-      .then(data => { listaProveedores = data; });
+      .then(data => { 
+        listaProveedores = data;
+        if (EDIT_MODE) {
+          cargarMetadatosDeEdicion();
+        }
+      });
   });
+
+  async function cargarMetadatosDeEdicion() {
+    try {
+      const res = await fetch(`/get_metadata/compras/${EDIT_FILENAME}`);
+      const result = await res.json();
+      if (result.success) {
+        const data = result.data;
+        
+        // Cargar campos básicos
+        document.getElementById('oc-number').value = data.oc_number || '';
+        document.getElementById('razon-social').value = data.razon_social || '';
+        document.getElementById('ruc').value = data.ruc || '';
+        document.getElementById('direccion').value = data.direccion || '';
+        document.getElementById('solicitante').value = data.solicitante || '';
+        document.getElementById('encargado').value = data.encargado || '';
+        document.getElementById('fecha').value = data.fecha || '';
+        document.getElementById('motivo').value = data.motivo || '';
+        
+        // Proveedor
+        document.getElementById('prov-nombre').value = data.prov_nombre || '';
+        document.getElementById('prov-ruc').value = data.prov_ruc || '';
+        document.getElementById('prov-cta-soles').value = data.prov_cta_soles || '';
+        document.getElementById('prov-cci').value = data.prov_cci || '';
+        document.getElementById('prov-cta-dolares').value = data.prov_cta_dolares || '';
+        document.getElementById('prov-dir').value = data.prov_dir || '';
+        document.getElementById('prov-contacto').value = data.prov_contacto || '';
+        
+        // Observaciones
+        document.getElementById('obs-encargado').value = data.obs_encargado || '';
+        document.getElementById('obs-dni').value = data.obs_dni || '';
+        document.getElementById('obs-sede').value = data.obs_sede || '';
+        document.getElementById('obs-almacen').value = data.obs_almacen || '';
+        document.getElementById('obs-fecha').value = data.obs_fecha || '';
+        
+        // Firmas
+        document.getElementById('sig-sistemas-name').value = data.sig_sistemas_name || '';
+        document.getElementById('sig-gerente-name').value = data.sig_gerente_name || '';
+        
+        // Toggles de Moneda e IGV
+        simboloMoneda = data.simbolo_moneda || 'S/';
+        preciosConIGV = data.precios_con_igv !== undefined ? data.precios_con_igv : true;
+        
+        // Actualizar UI del toggle de moneda
+        const btnCurrency = document.getElementById('btn-currency-toggle');
+        if (simboloMoneda === '$') {
+          simboloMoneda = '$'; // Asegurar el valor
+          btnCurrency.textContent = "💱 Moneda: Dólares ($)";
+        } else {
+          simboloMoneda = 'S/';
+          btnCurrency.textContent = "💱 Moneda: Soles (S/)";
+        }
+        
+        // Actualizar UI del toggle de IGV
+        const btnIGV = document.getElementById('btn-igv-toggle');
+        const headerTotal = document.getElementById('col-total-header');
+        if (preciosConIGV) {
+          btnIGV.textContent = "Precios INCLUYEN IGV";
+          btnIGV.className = "btn btn-primary";
+          headerTotal.textContent = "Total";
+        } else {
+          btnIGV.textContent = "Precios SIN IGV";
+          btnIGV.className = "btn btn-outline";
+          headerTotal.textContent = "Total sin IGV";
+        }
+        
+        // Limpiar tabla e insertar ítems
+        document.getElementById('items-body').innerHTML = '';
+        if (data.items && data.items.length > 0) {
+          data.items.forEach(item => addRow(item));
+        } else {
+          initialItems.forEach(addRow);
+        }
+        recalc();
+      } else {
+        alert("⚠️ No se pudieron cargar los metadatos para editar este archivo: " + result.message);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("❌ Error al conectar con el servidor para obtener los datos de edición.");
+    }
+  }
 
   // Mostrar menú cuando escribes
   inputProv.addEventListener('input', function() {
@@ -391,10 +482,10 @@
   }
 
   // ── Lógica para Guardar PDF en Servidor ──
-  async function guardarEnHistorial() { // SE AGREGO ASYNC AQUI
-    if (!confirm('¿Deseas guardar esta Orden de Compra en el historial?')) return;
+  async function guardarEnHistorial() {
+    const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Orden de Compra?' : '¿Deseas guardar esta Orden de Compra en el historial?';
+    if (!confirm(confirmMsg)) return;
 
-    // SE AGREGO ESTA LINEA PARA GUARDAR EL PROVEEDOR ANTES DEL PDF
     await registrarProv(); 
 
     // 1. Forzar el scroll hacia arriba para evitar recortes
@@ -404,11 +495,10 @@
     const numeroOC = document.getElementById('oc-number').value || 'SinNumero';
     const nombreArchivo = `OC_${numeroOC}.pdf`;
 
-    // --- NUEVO: RECOLECTAMOS LOS ÍTEMS PARA EL BUSCADOR ---
+    // Recolectar ítems para la búsqueda
     const items = [];
     document.querySelectorAll('#items-body tr').forEach(tr => {
       const inputs = tr.querySelectorAll('input');
-      // desc es inputs[1], marca es inputs[2], modelo es inputs[3]
       if (inputs.length >= 4) {
         items.push({
           desc: inputs[1].value,
@@ -418,25 +508,74 @@
       }
     });
 
+    // Recolectar todos los metadatos estructurados para poder editar
+    const itemsCompleto = [];
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      if (inputs.length >= 6) {
+        itemsCompleto.push({
+          jira: inputs[0].value,
+          desc: inputs[1].value,
+          marca: inputs[2].value,
+          modelo: inputs[3].value,
+          qty: parseFloat(inputs[4].value) || 0,
+          unit: parseFloat(inputs[5].value) || 0
+        });
+      }
+    });
+
+    const metadata = {
+      oc_number: numeroOC,
+      razon_social: document.getElementById('razon-social').value,
+      ruc: document.getElementById('ruc').value,
+      direccion: document.getElementById('direccion').value,
+      solicitante: document.getElementById('solicitante').value,
+      encargado: document.getElementById('encargado').value,
+      fecha: document.getElementById('fecha').value,
+      motivo: document.getElementById('motivo').value,
+      
+      prov_nombre: document.getElementById('prov-nombre').value,
+      prov_ruc: document.getElementById('prov-ruc').value,
+      prov_cta_soles: document.getElementById('prov-cta-soles').value,
+      prov_cci: document.getElementById('prov-cci').value,
+      prov_cta_dolares: document.getElementById('prov-cta-dolares').value,
+      prov_dir: document.getElementById('prov-dir').value,
+      prov_contacto: document.getElementById('prov-contacto').value,
+      
+      obs_encargado: document.getElementById('obs-encargado').value,
+      obs_dni: document.getElementById('obs-dni').value,
+      obs_sede: document.getElementById('obs-sede').value,
+      obs_almacen: document.getElementById('obs-almacen').value,
+      obs_fecha: document.getElementById('obs-fecha').value,
+      
+      sig_sistemas_name: document.getElementById('sig-sistemas-name').value,
+      sig_gerente_name: document.getElementById('sig-gerente-name').value,
+      
+      simbolo_moneda: simboloMoneda,
+      precios_con_igv: preciosConIGV,
+      items: itemsCompleto
+    };
+
     // 2. Opciones mejoradas para html2pdf (MANTENIDAS EXACTAMENTE IGUAL)
     const opciones = {
-      margin:       [10, 10, 10, 10], // Márgenes [arriba, izquierda, abajo, derecha] en mm
+      margin:       [10, 10, 10, 10], 
       filename:     nombreArchivo,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { 
         scale: 2, 
-        scrollY: 0, // ¡Esto evita que se corte!
+        scrollY: 0, 
         windowWidth: document.documentElement.scrollWidth
       },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: 'avoid-all' } // Evita cortar elementos a la mitad si pasa a otra página
+      pagebreak:    { mode: 'avoid-all' }
     };
 
     html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
       const formData = new FormData();
       formData.append('pdf', pdfBlob, nombreArchivo);
-
       formData.append('items', JSON.stringify(items));
+      formData.append('edit_mode', EDIT_MODE ? 'true' : 'false');
+      formData.append('metadata', JSON.stringify(metadata));
 
       fetch('/guardar_pdf', {
         method: 'POST',
@@ -446,8 +585,9 @@
       .then(datos => {
         if (datos.success) {
           alert('✅ ¡Guardado exitosamente en la carpeta historial!');
-          // Esta línea mágica recarga la página para traer el nuevo número
-          //window.location.reload(); 
+          if (EDIT_MODE) {
+            window.location.href = '/historial';
+          }
         } else {
           alert('❌ Error del servidor: ' + datos.message);
         }
@@ -460,7 +600,9 @@
   }
 
   // Load initial data
-  initialItems.forEach(addRow);
+  if (!EDIT_MODE) {
+    initialItems.forEach(addRow);
+  }
 </script>
 </body>
 </html>

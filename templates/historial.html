@@ -82,7 +82,10 @@
             {% for archivo in compras %}
             <li class="archivo-item">
                 <span class="archivo-nombre">{{ archivo }}</span>
-                <a href="{{ url_for('ver_pdf', tipo='compras', nombre=archivo) }}" target="_blank" class="btn-ver">👁️ Ver PDF</a>
+                <div style="display: flex; gap: 5px;">
+                    <a href="{{ url_for('ver_pdf', tipo='compras', nombre=archivo) }}" target="_blank" class="btn-ver">👁️ Ver PDF</a>
+                    <a href="/compras?edit={{ archivo }}" class="btn-ver" style="background: #e67e22;">✏️ Editar</a>
+                </div>
             </li>
             {% else %}
             <p class="vacio">No hay órdenes guardadas aún.</p>
@@ -96,7 +99,10 @@
             {% for archivo in bajas %}
             <li class="archivo-item">
                 <span class="archivo-nombre">{{ archivo }}</span>
-                <a href="{{ url_for('ver_pdf', tipo='bajas', nombre=archivo) }}" target="_blank" class="btn-ver">👁️ Ver PDF</a>
+                <div style="display: flex; gap: 5px;">
+                    <a href="{{ url_for('ver_pdf', tipo='bajas', nombre=archivo) }}" target="_blank" class="btn-ver">👁️ Ver PDF</a>
+                    <a href="/bajas?edit={{ archivo }}" class="btn-ver" style="background: #e67e22;">✏️ Editar</a>
+                </div>
             </li>
             {% else %}
             <p class="vacio">No hay guías de baja guardadas aún.</p>
