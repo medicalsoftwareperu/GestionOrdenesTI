@@ -246,7 +246,7 @@
     width: 100%;
     min-width: 0;
   }
-  .field:focus { border-bottom-color: var(--blue-light); background: #f0f7ff; border-radius: 3px 3px 0 0; }
+  .field:focus { border-bottom-color: var(--blue-light); background: var(--input-focus-bg); border-radius: 3px 3px 0 0; }
 
   /* ── PROVIDER BLOCK ── */
   .provider-grid {
