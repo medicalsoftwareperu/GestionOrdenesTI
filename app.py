@@ -142,7 +142,8 @@ def index():
 def compras():
     edit = request.args.get('edit', '')
     if edit:
-        return render_template('orden_de_compra.html', numero_oc='', edit_mode=True, edit_filename=edit)
+        numero_oc = edit.replace('OC_', '').replace('.pdf', '')
+        return render_template('orden_de_compra.html', numero_oc=numero_oc, edit_mode=True, edit_filename=edit)
     
     numero_actual = obtener_siguiente_numero(ARCHIVO_CONTADOR)
     fecha_hoy = datetime.now().strftime('%Y%m%d')
@@ -153,7 +154,8 @@ def compras():
 def bajas():
     edit = request.args.get('edit', '')
     if edit:
-        return render_template('guia_de_baja.html', numero_baja='', edit_mode=True, edit_filename=edit)
+        numero_baja = edit.replace('BAJA_', '').replace('.pdf', '')
+        return render_template('guia_de_baja.html', numero_baja=numero_baja, edit_mode=True, edit_filename=edit)
         
     numero_actual = obtener_siguiente_numero(ARCHIVO_CONTADOR_BAJA)
     fecha_hoy = datetime.now().strftime('%Y%m%d')
