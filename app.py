@@ -81,19 +81,16 @@ with get_db_connection() as conn:
             direccion TEXT
         )
     ''')
-    # Insertar valores por defecto si la tabla está vacía
-    cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) FROM mis_empresas')
-    if cursor.fetchone()[0] == 0:
-        conn.execute('''
-            INSERT INTO mis_empresas (razon_social, ruc, direccion)
-            VALUES (?, ?, ?)
-        ''', ('MEDICAL DENT DIGITAL', '20553850330', 'AV. ARENALES NRO. 630 LIMA - LIMA - JESUS MARIA'))
-        conn.execute('''
-            INSERT INTO mis_empresas (razon_social, ruc, direccion)
-            VALUES (?, ?, ?)
-        ''', ('ONCO TEST S.A.C.', '20547642512', 'Av. Gral Alvarez de Arenales Nro. 630'))
-        conn.commit()
+    # Insertar valores por defecto si no existen
+    conn.execute('''
+        INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
+        VALUES (?, ?, ?)
+    ''', ('MEDICAL DENT DIGITAL', '20553850330', 'AV. ARENALES NRO. 630 LIMA - LIMA - JESUS MARIA'))
+    conn.execute('''
+        INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
+        VALUES (?, ?, ?)
+    ''', ('ONCO TEST S.A.C.', '20547642512', 'Av. Gral Alvarez de Arenales Nro. 630'))
+    conn.commit()
 
 
 
