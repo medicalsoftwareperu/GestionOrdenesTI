@@ -12,8 +12,7 @@
 <div class="toolbar">
   <h1>📋 Generador de Orden de Compra</h1>
   
-  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: 6px;">🏠</button>
-  <button id="btn-theme-toggle" class="btn btn-outline" onclick="toggleGlobalTheme()" style="margin-right: auto;">🌙</button>
+  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">🏠</button>
   
   <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">💱 Moneda: Soles (S/)</button>
   <button id="btn-igv-toggle" class="btn btn-primary" onclick="toggleIGV()">Precios INCLUYEN IGV</button>
@@ -610,27 +609,6 @@
     // Inicializar tema al cargar la página
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
-    actualizarBotonTema(currentTheme);
-
-    function toggleGlobalTheme() {
-        const activeTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = activeTheme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        actualizarBotonTema(newTheme);
-    }
-
-    function actualizarBotonTema(theme) {
-        const btn = document.getElementById('btn-theme-toggle');
-        if (!btn) return;
-        if (theme === 'dark') {
-            btn.innerHTML = '☀️';
-            btn.title = 'Modo Claro';
-        } else {
-            btn.innerHTML = '🌙';
-            btn.title = 'Modo Oscuro';
-        }
-    }
 </script>
 </body>
 </html>

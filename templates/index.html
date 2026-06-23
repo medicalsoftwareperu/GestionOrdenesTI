@@ -16,8 +16,8 @@
             <span class="text-secondary">Conectado como: <strong class="text-primary">{{ session['usuario'] }}</strong></span>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-1" id="btn-theme-toggle" onclick="toggleGlobalTheme()">
-                <span>🌙</span> Modo Oscuro
+            <button class="btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center justify-content-center" id="btn-theme-toggle" onclick="toggleGlobalTheme()" style="width: 32px; height: 32px; padding: 0;">
+                🌙
             </button>
             <a href="/logout" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm">
                 <span>🚪</span> Cerrar Sesión
@@ -83,11 +83,11 @@
         const btn = document.getElementById('btn-theme-toggle');
         if (!btn) return;
         if (theme === 'dark') {
-            btn.innerHTML = '<span>☀️</span> Modo Claro';
-            btn.className = 'btn btn-outline-warning btn-sm shadow-sm d-flex align-items-center gap-1';
+            btn.innerHTML = '☀️';
+            btn.className = 'btn btn-outline-warning btn-sm shadow-sm d-flex align-items-center justify-content-center';
         } else {
-            btn.innerHTML = '<span>🌙</span> Modo Oscuro';
-            btn.className = 'btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center gap-1';
+            btn.innerHTML = '🌙';
+            btn.className = 'btn btn-outline-secondary btn-sm shadow-sm d-flex align-items-center justify-content-center';
         }
     }
 </script>
