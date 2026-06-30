@@ -194,6 +194,10 @@ def verificar_autenticacion():
     # Si no ha iniciado sesión, redirigir al login
     if 'usuario' not in session:
         return redirect(url_for('login'))
+        
+    # Si ya inició sesión pero no tiene rol asignado en la sesión (por cookies antiguas), asignarlo
+    if 'rol' not in session:
+        session['rol'] = USER_ROLES.get(session['usuario'], 'sistemas')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
