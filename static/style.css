@@ -273,18 +273,24 @@
     border-bottom: 1px solid var(--gray-mid);
     margin-bottom: 4px;
   }
-  input.provider-name-input {
+  input.provider-name-input, select.provider-bank-select {
     font-family: 'Barlow Condensed', sans-serif;
     font-size: 17px;
     font-weight: 700;
     color: var(--blue);
     text-align: center;
+    text-align-last: center;
     border: none;
     border-bottom: 2px dashed var(--blue);
     background: transparent;
     outline: none;
     width: 100%;
     padding: 2px 4px;
+    cursor: pointer;
+  }
+  select.provider-bank-select option {
+    background: var(--dropdown-bg);
+    color: var(--text);
   }
 
   /* ── TABLE ── */
