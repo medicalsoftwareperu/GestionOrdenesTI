@@ -19,6 +19,9 @@
       border-radius: 4px;
       overflow: hidden;
       font-family: 'Barlow', sans-serif;
+      width: 100%;
+      margin-top: 15px;
+      margin-bottom: 20px;
     }
     .registro-pagos-title {
       background: #333;
@@ -74,95 +77,100 @@
 <div class="card" id="oc-doc">
   
   <!-- CABECERA (LOGO, TÍTULO, NÚMERO) -->
-  <div class="doc-header">
-    <div class="logo-cell">
-      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Medical" style="max-height: 64px; max-width: 180px; object-fit: contain;">
+  <div class="doc-header" style="border-bottom: 3px solid var(--blue); margin-bottom: 15px;">
+    <div class="logo-cell" style="border-right: 2px solid var(--gray-mid); flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 16px; min-width: 250px;">
+      <div style="position: relative; width: 100%;">
+        <input class="company-name-input" id="razon-social" placeholder="RAZÓN SOCIAL (EMISOR)" autocomplete="off" style="font-size: 15px; font-weight: 800; color: var(--blue); border: none; background: transparent; outline: none; width: 100%; text-transform: uppercase;">
+        <div id="mi-empresa-dropdown" class="custom-dropdown" style="left: 0; width: 100%;"></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px; width: 100%;">
+        <span style="font-size: 10px; color: var(--text-muted); font-weight: bold; flex-shrink: 0;">R.U.C:</span>
+        <input id="ruc" placeholder="RUC Emisor" style="border: none; background: transparent; outline: none; font-size: 10px; color: var(--text-muted); width: 100%;">
+      </div>
+      <div style="display: flex; align-items: center; gap: 4px; width: 100%;">
+        <span style="font-size: 10px; color: var(--text-muted); font-weight: bold; flex-shrink: 0;">Dir:</span>
+        <input id="direccion" placeholder="Dirección Emisor" style="border: none; background: transparent; outline: none; font-size: 10px; color: var(--text-muted); width: 100%;">
+      </div>
     </div>
     <div class="doc-title-cell">
       <div class="doc-title">Orden de Pago</div>
     </div>
-    <div class="doc-num-cell">
+    <div class="doc-num-cell" style="min-width: 170px;">
       <div class="doc-num-label">VOUCHER N°</div>
       <input class="doc-num-input" id="oc-number" value="{{ numero_op }}" maxlength="12" readonly>
     </div>
   </div>
 
-  <!-- SECCIÓN DATOS EMISOR -->
-  <div class="section-title">Datos Emisor</div>
-  <div class="data-grid cols-4">
+  <!-- GRILLA DE DATOS GENERALES (SIN SUBTÍTULO, CONTIGUA) -->
+  <div class="data-grid cols-4" style="border-top: 1px solid var(--gray-mid);">
+    <!-- FILA 1: FECHA Y ÁREA RESPONSABLE -->
     <div class="data-cell">
-      <span class="lbl">Razón Social:</span>
+      <span class="lbl">FECHA</span>
     </div>
-    <div class="data-cell span-2">
-      <div style="position: relative; width: 100%;">
-        <input class="field" id="razon-social" placeholder="Razón social" autocomplete="off">
-        <div id="mi-empresa-dropdown" class="custom-dropdown"></div>
-      </div>
+    <div class="data-cell">
+      <input class="field" id="fecha" type="text" style="font-weight: bold;">
     </div>
-    <div class="data-cell" style="gap:4px">
-      <span class="lbl">R.U.C.:</span>
-      <input class="field" id="ruc" placeholder="RUC">
+    <div class="data-cell">
+      <span class="lbl">ÁREA RESPONSABLE</span>
+    </div>
+    <div class="data-cell">
+      <input class="field" id="solicitante" value="CONTABILIDAD" style="font-weight: bold; color: var(--blue);">
     </div>
 
+    <!-- FILA 2: PROVEEDOR -->
     <div class="data-cell">
-      <span class="lbl">Dirección:</span>
+      <span class="lbl">PROVEEDOR</span>
     </div>
     <div class="data-cell span-3">
-      <input class="field" id="direccion" placeholder="Dirección">
-    </div>
-
-    <div class="data-cell" style="gap:4px">
-      <span class="lbl">Área Responsable:</span>
-      <input class="field" id="solicitante" value="CONTABILIDAD" placeholder="">
-    </div>
-    <div class="data-cell span-3" style="gap:4px">
-      <span class="lbl">Fecha:</span>
-      <input class="field" id="fecha" type="text" style="max-width: 160px;">
-    </div>
-  </div>
-
-  <!-- SECCIÓN DATOS PROVEEDOR -->
-  <div class="section-title">Datos Proveedor</div>
-  <div class="provider-grid">
-    <div class="provider-col">
       <div style="position: relative; width: 100%;">
-        <input class="provider-name-input" id="prov-nombre" placeholder="Nombre del proveedor" autocomplete="off">
-        <div id="custom-dropdown" class="custom-dropdown"></div>
-      </div>
-      
-      <div class="provider-row">
-        <span class="lbl">RUC / DNI:</span>
-        <input class="field" id="prov-ruc" placeholder="RUC o DNI proveedor">
-      </div>
-      <div class="provider-row">
-        <span class="lbl">Banco:</span>
-        <select class="provider-bank-select" id="prov-banco">
-          <option value="BCP">BCP</option>
-          <option value="BBVA">BBVA</option>
-          <option value="INTERBANK">INTERBANK</option>
-          <option value="SCOTIABANK">SCOTIABANK</option>
-          <option value="BANBIF">BANBIF</option>
-          <option value="BANCO DE LA NACIÓN">BANCO DE LA NACIÓN</option>
-          <option value="OTROS">OTROS</option>
-        </select>
+        <input class="field" id="prov-nombre" placeholder="Nombre del proveedor" autocomplete="off" style="font-weight: bold; text-transform: uppercase;">
+        <div id="custom-dropdown" class="custom-dropdown" style="left: 0; width: 100%;"></div>
       </div>
     </div>
-    
-    <div class="provider-col">
-      <div style="height:34px"></div>
-      <div class="provider-row">
-        <span class="lbl">Titular Cuenta:</span>
-        <input class="field" id="prov-contacto-nombre" placeholder="Titular de la cuenta">
-      </div>
-      <div class="provider-row">
-        <span class="lbl">N° Cuenta:</span>
-        <input class="field" id="prov-cta-soles" placeholder="Número de cuenta">
-      </div>
+
+    <!-- FILA 3: RUC / DNI -->
+    <div class="data-cell">
+      <span class="lbl">RUC / DNI</span>
+    </div>
+    <div class="data-cell span-3">
+      <input class="field" id="prov-ruc" placeholder="RUC o DNI proveedor" style="font-weight: bold;">
+    </div>
+
+    <!-- FILA 4: BANCO -->
+    <div class="data-cell">
+      <span class="lbl">BANCO</span>
+    </div>
+    <div class="data-cell span-3">
+      <select class="field" id="prov-banco" style="font-weight: bold; border: none; background: transparent; padding: 0;">
+        <option value="BCP">BCP</option>
+        <option value="BBVA">BBVA</option>
+        <option value="INTERBANK">INTERBANK</option>
+        <option value="SCOTIABANK">SCOTIABANK</option>
+        <option value="BANBIF">BANBIF</option>
+        <option value="BANCO DE LA NACIÓN">BANCO DE LA NACIÓN</option>
+        <option value="OTROS">OTROS</option>
+      </select>
+    </div>
+
+    <!-- FILA 5: TITULAR CUENTA -->
+    <div class="data-cell">
+      <span class="lbl">TITULAR CUENTA</span>
+    </div>
+    <div class="data-cell span-3">
+      <input class="field" id="prov-contacto-nombre" placeholder="Titular de la cuenta" style="font-weight: bold; text-transform: uppercase;">
+    </div>
+
+    <!-- FILA 6: N° CUENTA -->
+    <div class="data-cell">
+      <span class="lbl">N° CUENTA</span>
+    </div>
+    <div class="data-cell span-3">
+      <input class="field" id="prov-cta-soles" placeholder="Número de cuenta" style="font-weight: bold;">
     </div>
   </div>
 
   <!-- TABLA DE DETALLES -->
-  <div class="items-wrapper">
+  <div class="items-wrapper" style="margin-top: 15px;">
     <table class="items-table">
       <thead>
         <tr>
@@ -178,40 +186,39 @@
     </table>
   </div>
 
-  <!-- TOTALES Y REGISTRO DE PAGOS -->
-  <div class="totals-area" style="justify-content: space-between; align-items: center;">
-    <!-- REGISTRO DE PAGOS -->
-    <div class="registro-pagos-container" style="width: 45%; margin-top: 0;">
-      <div class="registro-pagos-title">Registro de Pagos</div>
-      <div class="registro-pagos-bar" id="registro-pagos-monto">PAGO | S/ 0.00</div>
+  <!-- TOTAL GENERAL -->
+  <div class="totals-area" style="justify-content: flex-end; padding: 10px 16px;">
+    <div class="total-line">
+      <span class="total-lbl">Total General:</span>
+      <span class="total-val grand" id="total-igv">S/ 0.00</span>
     </div>
-    
-    <!-- TOTAL GENERAL -->
-    <div class="total-line" style="margin-right: 20px;">
-      <span class="total-lbl" style="font-size: 14px;">Total General:</span>
-      <span class="total-val grand" id="total-igv" style="font-size: 22px;">S/ 0.00</span>
-    </div>
+  </div>
+
+  <!-- SECCIÓN REGISTRO DE PAGOS (FILA COMPLETA) -->
+  <div class="registro-pagos-container">
+    <div class="registro-pagos-title">Registro de Pagos</div>
+    <div class="registro-pagos-bar" id="registro-pagos-monto">PAGO | S/ 0.00</div>
   </div>
 
   <div class="footer-total-text" id="footer-total">TOTAL GENERAL: S/ 0.00</div>
 
-  <!-- SECCIÓN DE FIRMAS -->
-  <div class="sigs" style="margin-top: 40px;">
-    <div class="sig-box">
+  <!-- SECCIÓN DE FIRMAS EQUITATIVAS -->
+  <div class="sigs" style="margin-top: 40px; display: flex; justify-content: space-between; border-top: 1px solid var(--gray-mid); width: 100%;">
+    <div class="sig-box" style="flex: 1; border-right: 1px solid var(--gray-mid); width: 33.33%; padding: 20px 10px 10px; box-sizing: border-box;">
       <input class="sig-name-input" id="sig-tesoreria-name" placeholder="Nombre Tesorero">
-      <div class="sig-line"></div>
+      <div class="sig-line" style="width: 85%;"></div>
       <div class="sig-label">ÁREA TESORERÍA</div>
     </div>
     
-    <div class="sig-box">
+    <div class="sig-box" style="flex: 1; border-right: 1px solid var(--gray-mid); width: 33.33%; padding: 20px 10px 10px; box-sizing: border-box;">
       <input class="sig-name-input" id="sig-solicitante-name" placeholder="Nombre Solicitante">
-      <div class="sig-line"></div>
+      <div class="sig-line" style="width: 85%;"></div>
       <div class="sig-label">ÁREA SOLICITANTE</div>
     </div>
     
-    <div class="sig-box">
+    <div class="sig-box" style="flex: 1; border-right: none; width: 33.33%; padding: 20px 10px 10px; box-sizing: border-box;">
       <input class="sig-name-input" id="sig-gerente-name" placeholder="Nombre Gerente">
-      <div class="sig-line"></div>
+      <div class="sig-line" style="width: 85%;"></div>
       <div class="sig-label">GERENCIA</div>
     </div>
   </div>

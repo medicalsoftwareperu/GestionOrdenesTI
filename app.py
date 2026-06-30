@@ -83,6 +83,20 @@ with get_db_connection() as conn:
         )
     ''')
     conn.execute('''
+        CREATE TABLE IF NOT EXISTS proveedores_conta (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT UNIQUE,
+            ruc TEXT,
+            direccion TEXT,
+            contacto TEXT,
+            cuenta_soles TEXT,
+            cuenta_dolares TEXT,
+            banco TEXT DEFAULT 'BCP',
+            contacto_nombre TEXT DEFAULT '',
+            contacto_telefono TEXT DEFAULT ''
+        )
+    ''')
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS items_pdf (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre_archivo TEXT,
@@ -431,23 +445,27 @@ def get_mis_empresas():
 
 @app.route('/get_proveedores')
 def get_proveedores():
+    rol = session.get('rol', 'sistemas')
+    table = 'proveedores_conta' if rol == 'contabilidad' else 'proveedores'
     conn = get_db_connection()
-    proveedores = conn.execute('SELECT * FROM proveedores ORDER BY nombre ASC').fetchall()
+    proveedores = conn.execute(f'SELECT * FROM {table} ORDER BY nombre ASC').fetchall()
     conn.close()
     return jsonify([dict(p) for p in proveedores])
 
 @app.route('/guardar_proveedor', methods=['POST'])
 def guardar_proveedor():
+    rol = session.get('rol', 'sistemas')
+    table = 'proveedores_conta' if rol == 'contabilidad' else 'proveedores'
     data = request.json
     try:
         with get_db_connection() as conn:
-            conn.execute('''
-                INSERT OR REPLACE INTO proveedores (nombre, ruc, direccion, contacto, cuenta_soles, cci, cuenta_dolares, banco, contacto_nombre, contacto_telefono)
+            conn.execute(f'''
+                INSERT OR REPLACE INTO {table} (nombre, ruc, direccion, contacto, cuenta_soles, cci, cuenta_dolares, banco, contacto_nombre, contacto_telefono)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                 (
                     data.get('nombre'), 
                     data.get('ruc'), 
-                    data.get('direccion'), 
+                    data.get('direccion', ''), 
                     data.get('contacto', ''), 
                     data.get('cuenta_soles', ''),   
                     data.get('cci', ''),            
