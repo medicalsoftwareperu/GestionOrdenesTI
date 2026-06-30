@@ -222,20 +222,17 @@
 
   <!-- SECCIÓN DE FIRMAS EQUITATIVAS -->
   <div class="sigs" style="margin-top: 40px; display: flex; justify-content: space-between; border-top: 1px solid var(--gray-mid); width: 100%;">
-    <div class="sig-box" style="flex: 1; border-right: 1px solid var(--gray-mid); width: 33.33%; padding: 20px 10px 10px; box-sizing: border-box;">
-      <input class="sig-name-input" id="sig-tesoreria-name" placeholder="Nombre Tesorero">
+    <div class="sig-box" style="flex: 1; border-right: 1px solid var(--gray-mid); width: 33.33%; padding: 90px 10px 10px; box-sizing: border-box;">
       <div class="sig-line" style="width: 85%;"></div>
       <div class="sig-label">ÁREA TESORERÍA</div>
     </div>
     
-    <div class="sig-box" style="flex: 1; border-right: 1px solid var(--gray-mid); width: 33.33%; padding: 20px 10px 10px; box-sizing: border-box;">
-      <input class="sig-name-input" id="sig-solicitante-name" placeholder="Nombre Solicitante">
+    <div class="sig-box" style="flex: 1; border-right: 1px solid var(--gray-mid); width: 33.33%; padding: 90px 10px 10px; box-sizing: border-box;">
       <div class="sig-line" style="width: 85%;"></div>
       <div class="sig-label">ÁREA SOLICITANTE</div>
     </div>
     
-    <div class="sig-box" style="flex: 1; border-right: none; width: 33.33%; padding: 20px 10px 10px; box-sizing: border-box;">
-      <input class="sig-name-input" id="sig-gerente-name" placeholder="Nombre Gerente">
+    <div class="sig-box" style="flex: 1; border-right: none; width: 33.33%; padding: 90px 10px 10px; box-sizing: border-box;">
       <div class="sig-line" style="width: 85%;"></div>
       <div class="sig-label">GERENCIA</div>
     </div>
@@ -309,10 +306,7 @@
         document.getElementById('prov-banco').value = data.prov_banco || 'BCP';
         document.getElementById('prov-contacto-nombre').value = data.prov_contacto_nombre || '';
         
-        // Firmas
-        document.getElementById('sig-tesoreria-name').value = data.sig_tesoreria_name || '';
-        document.getElementById('sig-solicitante-name').value = data.sig_solicitante_name || '';
-        document.getElementById('sig-gerente-name').value = data.sig_gerente_name || '';
+        // Firmas (eliminadas del DOM)
         
         // Moneda
         simboloMoneda = data.simbolo_moneda || 'S/';
@@ -540,9 +534,9 @@
       prov_banco: document.getElementById('prov-banco').value,
       prov_contacto_nombre: document.getElementById('prov-contacto-nombre').value,
       
-      sig_tesoreria_name: document.getElementById('sig-tesoreria-name').value,
-      sig_solicitante_name: document.getElementById('sig-solicitante-name').value,
-      sig_gerente_name: document.getElementById('sig-gerente-name').value,
+      sig_tesoreria_name: '',
+      sig_solicitante_name: '',
+      sig_gerente_name: '',
       
       simbolo_moneda: simboloMoneda,
       items: items
