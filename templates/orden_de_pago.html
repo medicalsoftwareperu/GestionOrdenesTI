@@ -76,34 +76,50 @@
 
 <div class="card" id="oc-doc">
   
-  <!-- CABECERA (LOGO, TÍTULO, NÚMERO) -->
+  <!-- CABECERA DE COMPRA / PAGO (LOGO, TÍTULO, NÚMERO) -->
   <div class="doc-header" style="border-bottom: 3px solid var(--blue); margin-bottom: 15px;">
-    <div class="logo-cell" style="border-right: 2px solid var(--gray-mid); flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 16px; min-width: 250px;">
-      <div style="position: relative; width: 100%;">
-        <input class="company-name-input" id="razon-social" placeholder="RAZÓN SOCIAL (EMISOR)" autocomplete="off" style="font-size: 15px; font-weight: 800; color: var(--blue); border: none; background: transparent; outline: none; width: 100%; text-transform: uppercase;">
-        <div id="mi-empresa-dropdown" class="custom-dropdown" style="left: 0; width: 100%;"></div>
-      </div>
-      <div style="display: flex; align-items: center; gap: 4px; width: 100%;">
-        <span style="font-size: 10px; color: var(--text-muted); font-weight: bold; flex-shrink: 0;">R.U.C:</span>
-        <input id="ruc" placeholder="RUC Emisor" style="border: none; background: transparent; outline: none; font-size: 10px; color: var(--text-muted); width: 100%;">
-      </div>
-      <div style="display: flex; align-items: center; gap: 4px; width: 100%;">
-        <span style="font-size: 10px; color: var(--text-muted); font-weight: bold; flex-shrink: 0;">Dir:</span>
-        <input id="direccion" placeholder="Dirección Emisor" style="border: none; background: transparent; outline: none; font-size: 10px; color: var(--text-muted); width: 100%;">
-      </div>
+    <div class="logo-cell">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Medical" style="max-height: 64px; max-width: 180px; object-fit: contain;">
     </div>
     <div class="doc-title-cell">
       <div class="doc-title">Orden de Pago</div>
     </div>
-    <div class="doc-num-cell" style="min-width: 170px;">
+    <div class="doc-num-cell">
       <div class="doc-num-label">VOUCHER N°</div>
       <input class="doc-num-input" id="oc-number" value="{{ numero_op }}" maxlength="12" readonly>
     </div>
   </div>
 
-  <!-- GRILLA DE DATOS GENERALES (SIN SUBTÍTULO, CONTIGUA) -->
+  <!-- GRILLA DE DATOS GENERALES (MÁS EMISOR Y PROVEEDOR UNIFICADOS) -->
   <div class="data-grid cols-4" style="border-top: 1px solid var(--gray-mid);">
-    <!-- FILA 1: FECHA Y ÁREA RESPONSABLE -->
+    <!-- FILA 1: RAZÓN SOCIAL (EMISOR) -->
+    <div class="data-cell">
+      <span class="lbl">Razón Social:</span>
+    </div>
+    <div class="data-cell span-3">
+      <div style="position: relative; width: 100%;">
+        <input class="field" id="razon-social" placeholder="Razón social emisor" autocomplete="off" style="font-weight: bold; text-transform: uppercase;">
+        <div id="mi-empresa-dropdown" class="custom-dropdown" style="left: 0; width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- FILA 2: R.U.C. (EMISOR) -->
+    <div class="data-cell">
+      <span class="lbl">R.U.C. (Emisor):</span>
+    </div>
+    <div class="data-cell span-3">
+      <input class="field" id="ruc" placeholder="RUC Emisor" style="font-weight: bold;">
+    </div>
+
+    <!-- FILA 3: DIRECCIÓN (EMISOR) -->
+    <div class="data-cell">
+      <span class="lbl">Dirección (Emisor):</span>
+    </div>
+    <div class="data-cell span-3">
+      <input class="field" id="direccion" placeholder="Dirección Emisor" style="font-weight: bold; text-transform: uppercase;">
+    </div>
+
+    <!-- FILA 4: FECHA Y ÁREA RESPONSABLE -->
     <div class="data-cell">
       <span class="lbl">FECHA</span>
     </div>
@@ -117,7 +133,7 @@
       <input class="field" id="solicitante" value="CONTABILIDAD" style="font-weight: bold; color: var(--blue);">
     </div>
 
-    <!-- FILA 2: PROVEEDOR -->
+    <!-- FILA 5: PROVEEDOR -->
     <div class="data-cell">
       <span class="lbl">PROVEEDOR</span>
     </div>
@@ -128,7 +144,7 @@
       </div>
     </div>
 
-    <!-- FILA 3: RUC / DNI -->
+    <!-- FILA 6: RUC / DNI -->
     <div class="data-cell">
       <span class="lbl">RUC / DNI</span>
     </div>
@@ -136,7 +152,7 @@
       <input class="field" id="prov-ruc" placeholder="RUC o DNI proveedor" style="font-weight: bold;">
     </div>
 
-    <!-- FILA 4: BANCO -->
+    <!-- FILA 7: BANCO -->
     <div class="data-cell">
       <span class="lbl">BANCO</span>
     </div>
@@ -152,7 +168,7 @@
       </select>
     </div>
 
-    <!-- FILA 5: TITULAR CUENTA -->
+    <!-- FILA 8: TITULAR CUENTA -->
     <div class="data-cell">
       <span class="lbl">TITULAR CUENTA</span>
     </div>
@@ -160,7 +176,7 @@
       <input class="field" id="prov-contacto-nombre" placeholder="Titular de la cuenta" style="font-weight: bold; text-transform: uppercase;">
     </div>
 
-    <!-- FILA 6: N° CUENTA -->
+    <!-- FILA 9: N° CUENTA -->
     <div class="data-cell">
       <span class="lbl">N° CUENTA</span>
     </div>
@@ -460,11 +476,13 @@
     recalc();
   }
 
+  // Eliminar fila
   function delRow(btn) {
     btn.closest('tr').remove();
     recalc();
   }
 
+  // Recalcular montos
   function recalc() {
     const rows = document.querySelectorAll('#items-body tr');
     let total = 0;
