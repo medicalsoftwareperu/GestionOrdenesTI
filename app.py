@@ -26,9 +26,17 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'gestion_ordenes_ti_secret_key')
 # Credenciales de inicio de sesión leídas de forma segura desde variables de entorno
 TI_USER = os.getenv('TI_USERNAME', 'admin')
 TI_PASS = os.getenv('TI_PASSWORD', 'sistemas')
+CONTA_USER = os.getenv('CONTA_USERNAME', 'conta')
+CONTA_PASS = os.getenv('CONTA_PASSWORD', 'conta123')
 
 USER_CREDENTIALS = {
-    TI_USER: TI_PASS
+    TI_USER: TI_PASS,
+    CONTA_USER: CONTA_PASS
+}
+
+USER_ROLES = {
+    TI_USER: 'sistemas',
+    CONTA_USER: 'contabilidad'
 }
 
 # --- CONFIGURACIÓN DE CARPETAS ---
@@ -37,13 +45,17 @@ CARPETA_HISTORIAL = os.path.join(BASE_DIR, 'historial')
 
 CARPETA_COMPRAS = os.path.join(CARPETA_HISTORIAL, 'compras')
 CARPETA_BAJAS = os.path.join(CARPETA_HISTORIAL, 'bajas')
+CARPETA_PAGOS = os.path.join(CARPETA_HISTORIAL, 'pagos')
 CARPETA_COMPRAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'compras_editadas')
 CARPETA_BAJAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'bajas_editadas')
+CARPETA_PAGOS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'pagos_editadas')
 
 os.makedirs(CARPETA_COMPRAS, exist_ok=True)
 os.makedirs(CARPETA_BAJAS, exist_ok=True)
+os.makedirs(CARPETA_PAGOS, exist_ok=True)
 os.makedirs(CARPETA_COMPRAS_EDITADAS, exist_ok=True)
 os.makedirs(CARPETA_BAJAS_EDITADAS, exist_ok=True)
+os.makedirs(CARPETA_PAGOS_EDITADAS, exist_ok=True)
 
 ARCHIVO_CONTADOR = os.path.join(BASE_DIR, 'contador_oc.txt')
 ARCHIVO_CONTADOR_BAJA = os.path.join(BASE_DIR, 'contador_baja.txt')
@@ -133,6 +145,12 @@ with get_db_connection() as conn:
             conn.execute(query)
         except sqlite3.OperationalError:
             pass
+
+    # Inicializar contador de pagos si no existe
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM contadores WHERE tipo = ?', ('pagos',))
+    if cursor.fetchone()[0] == 0:
+        conn.execute('INSERT INTO contadores (tipo, valor) VALUES (?, ?)', ('pagos', 1))
             
     conn.commit()
 
@@ -190,6 +208,7 @@ def login():
         
         if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
             session['usuario'] = username
+            session['rol'] = USER_ROLES.get(username, 'sistemas')
             return redirect(url_for('index'))
         else:
             error = 'Usuario o contraseña incorrectos.'
@@ -199,6 +218,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('usuario', None)
+    session.pop('rol', None)
     return redirect(url_for('login'))
 
 @app.route('/')
@@ -207,6 +227,8 @@ def index():
 
 @app.route('/compras')
 def compras():
+    if session.get('rol') != 'sistemas':
+        return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
         numero_oc = edit.replace('OC_', '').replace('.pdf', '')
@@ -219,6 +241,8 @@ def compras():
 
 @app.route('/bajas')
 def bajas():
+    if session.get('rol') != 'sistemas':
+        return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
         numero_baja = edit.replace('BAJA_', '').replace('.pdf', '')
@@ -229,45 +253,75 @@ def bajas():
     numero_formateado = f"{fecha_hoy}-{numero_actual:04d}" 
     return render_template('guia_de_baja.html', numero_baja=numero_formateado, edit_mode=False, edit_filename='')
 
+@app.route('/pagos')
+def pagos():
+    if session.get('rol') != 'contabilidad':
+        return redirect(url_for('index'))
+    edit = request.args.get('edit', '')
+    if edit:
+        numero_op = edit.replace('OP_', '').replace('.pdf', '')
+        return render_template('orden_de_pago.html', numero_op=numero_op, edit_mode=True, edit_filename=edit)
+        
+    numero_actual = obtener_siguiente_numero('pagos')
+    numero_formateado = f"00{datetime.now().year}-{numero_actual:06d}"
+    return render_template('orden_de_pago.html', numero_op=numero_formateado, edit_mode=False, edit_filename='')
+
 @app.route('/historial')
 def historial():
+    rol = session.get('rol', 'sistemas')
     archivos_compras = []
-    if os.path.exists(CARPETA_COMPRAS):
-        archivos_compras = sorted([f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')], reverse=True)
-
     archivos_bajas = []
-    if os.path.exists(CARPETA_BAJAS):
-        archivos_bajas = sorted([f for f in os.listdir(CARPETA_BAJAS) if f.endswith('.pdf')], reverse=True)
-
-    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas)
+    archivos_pagos = []
+    
+    if rol == 'sistemas':
+        if os.path.exists(CARPETA_COMPRAS):
+            archivos_compras = sorted([f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')], reverse=True)
+        if os.path.exists(CARPETA_BAJAS):
+            archivos_bajas = sorted([f for f in os.listdir(CARPETA_BAJAS) if f.endswith('.pdf')], reverse=True)
+    elif rol == 'contabilidad':
+        if os.path.exists(CARPETA_PAGOS):
+            archivos_pagos = sorted([f for f in os.listdir(CARPETA_PAGOS) if f.endswith('.pdf')], reverse=True)
+            
+    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos)
 
 
 # --- RUTAS DE ARCHIVOS (PDF) ---
 @app.route('/ver_pdf/<tipo>/<nombre>')
 def ver_pdf(tipo, nombre):
-    if tipo == 'compras':
+    rol = session.get('rol', 'sistemas')
+    if tipo == 'compras' and rol == 'sistemas':
         return send_from_directory(CARPETA_COMPRAS, nombre)
-    elif tipo == 'bajas':
+    elif tipo == 'bajas' and rol == 'sistemas':
         return send_from_directory(CARPETA_BAJAS, nombre)
-    return "Archivo no encontrado", 404
+    elif tipo == 'pagos' and rol == 'contabilidad':
+        return send_from_directory(CARPETA_PAGOS, nombre)
+    return "Archivo no encontrado o acceso no autorizado", 404
 
 @app.route('/get_metadata/<tipo>/<nombre>')
 def get_metadata(tipo, nombre):
     json_nombre = nombre.replace('.pdf', '.json')
-    if tipo == 'compras':
+    rol = session.get('rol', 'sistemas')
+    
+    if tipo == 'compras' and rol == 'sistemas':
         ruta_editada = os.path.join(CARPETA_COMPRAS_EDITADAS, json_nombre)
         if os.path.exists(ruta_editada):
             ruta = ruta_editada
         else:
             ruta = os.path.join(CARPETA_COMPRAS, json_nombre)
-    elif tipo == 'bajas':
+    elif tipo == 'bajas' and rol == 'sistemas':
         ruta_editada = os.path.join(CARPETA_BAJAS_EDITADAS, json_nombre)
         if os.path.exists(ruta_editada):
             ruta = ruta_editada
         else:
             ruta = os.path.join(CARPETA_BAJAS, json_nombre)
+    elif tipo == 'pagos' and rol == 'contabilidad':
+        ruta_editada = os.path.join(CARPETA_PAGOS_EDITADAS, json_nombre)
+        if os.path.exists(ruta_editada):
+            ruta = ruta_editada
+        else:
+            ruta = os.path.join(CARPETA_PAGOS, json_nombre)
     else:
-        return jsonify({'success': False, 'message': 'Tipo no válido'}), 400
+        return jsonify({'success': False, 'message': 'Tipo no válido o acceso no autorizado'}), 400
     
     if os.path.exists(ruta):
         try:
@@ -304,6 +358,12 @@ def guardar_pdf():
         else:
             ruta_guardado = os.path.join(CARPETA_BAJAS, nombre_archivo)
             incrementar_numero('bajas')
+    elif nombre_archivo.startswith('OP_'):
+        if edit_mode:
+            ruta_guardado = os.path.join(CARPETA_PAGOS_EDITADAS, nombre_archivo)
+        else:
+            ruta_guardado = os.path.join(CARPETA_PAGOS, nombre_archivo)
+            incrementar_numero('pagos')
     else:
         ruta_guardado = os.path.join(CARPETA_HISTORIAL, nombre_archivo)
     
@@ -318,8 +378,8 @@ def guardar_pdf():
             with open(ruta_json, 'w', encoding='utf-8') as f:
                 json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
 
-            # Guardar automáticamente la Razón Social del emisor si es una Orden de Compra
-            if nombre_archivo.startswith('OC_'):
+            # Guardar automáticamente la Razón Social del emisor si es una Orden de Compra o de Pago
+            if nombre_archivo.startswith('OC_') or nombre_archivo.startswith('OP_'):
                 razon_social = metadata_dict.get('razon_social')
                 ruc = metadata_dict.get('ruc')
                 direccion = metadata_dict.get('direccion')
@@ -340,7 +400,10 @@ def guardar_pdf():
     items_json = request.form.get('items', '[]')
     try:
         items = json.loads(items_json)
-        texto_busqueda = " ".join([f"{i.get('desc','')} {i.get('marca','')} {i.get('modelo','')}" for i in items]).lower()
+        if nombre_archivo.startswith('OP_'):
+            texto_busqueda = " ".join([f"{i.get('detalle','')} {i.get('comprobante','')}" for i in items]).lower()
+        else:
+            texto_busqueda = " ".join([f"{i.get('desc','')} {i.get('marca','')} {i.get('modelo','')}" for i in items]).lower()
         
         with get_db_connection() as conn:
             if edit_mode:

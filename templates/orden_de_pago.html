@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Orden de Pago - Medical</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.3">
+  
+  <style>
+    /* Inyección de Tema Rojo / Carmesí de Contabilidad */
+    :root {
+      --blue: #c02c2c;
+      --blue-dark: #8e1b1b;
+      --blue-light: #ffebee;
+      --input-focus-bg: #ffebee;
+    }
+    
+    .registro-pagos-container {
+      margin-top: 15px;
+      border: 1px solid var(--blue);
+      border-radius: 4px;
+      overflow: hidden;
+      font-family: 'Barlow', sans-serif;
+    }
+    .registro-pagos-title {
+      background: #333;
+      color: white;
+      padding: 6px 12px;
+      font-weight: bold;
+      font-size: 13px;
+      text-transform: uppercase;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+    .registro-pagos-bar {
+      background: var(--blue);
+      color: white;
+      padding: 8px 12px;
+      font-weight: bold;
+      font-size: 15px;
+      text-align: center;
+    }
+
+    /* Ocultar botones e inputs innecesarios al imprimir */
+    @media print {
+      .no-print, .btn-del-row {
+        display: none !important;
+      }
+      .registro-pagos-container {
+        border-color: #000 !important;
+      }
+      .registro-pagos-bar {
+        background-color: #000 !important;
+        color: #fff !important;
+      }
+      .registro-pagos-title {
+        background-color: #000 !important;
+        color: #fff !important;
+        border-bottom: 1px solid #fff;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar no-print">
+  <div>
+    <button class="btn btn-outline" onclick="window.location.href='/'">🏠 Panel Principal</button>
+    <button class="btn btn-outline" onclick="window.location.href='/historial'">📂 Ver Historial</button>
+    <button class="btn btn-primary" id="btn-currency-toggle" onclick="toggleCurrency()">💱 Moneda: Soles (S/)</button>
+  </div>
+  <button class="btn btn-success" onclick="guardarEnHistorial()">💾 Guardar Documento</button>
+</div>
+
+<div class="doc-container" id="oc-doc">
+  
+  <!-- CABECERA EMISOR (RAZÓN SOCIAL) -->
+  <div class="header-logo">
+    <div class="header-logo-left">
+      <div style="position: relative; width: 100%;">
+        <input class="company-name-input" id="razon-social" placeholder="RAZÓN SOCIAL (EMISOR)" autocomplete="off">
+        <div id="mi-empresa-dropdown" class="custom-dropdown"></div>
+      </div>
+      <div style="margin-top: 5px;">
+        <span class="lbl-small">R.U.C:</span>
+        <input class="field-small" id="ruc" placeholder="RUC Emisor">
+      </div>
+      <div>
+        <span class="lbl-small">Dirección:</span>
+        <input class="field-small" id="direccion" placeholder="Dirección Emisor">
+      </div>
+    </div>
+    
+    <div class="header-logo-right">
+      <div style="font-size: 11px; font-weight: bold; color: var(--text-light); text-transform: uppercase;">
+        Documento Oficial
+      </div>
+      <div style="font-size: 16px; font-weight: 800; color: var(--blue);">
+        GRUPO MEDICAL
+      </div>
+    </div>
+  </div>
+
+  <!-- NÚMERO DE DOCUMENTO -->
+  <div class="doc-title-row">
+    <div class="doc-title-main">ORDEN DE PAGO</div>
+    <div class="doc-title-number">
+      <span class="lbl-num">VOUCHER N°:</span>
+      <input class="field text-danger" id="oc-number" value="{{ numero_op }}" style="width:160px; font-weight:bold; font-size:14px; text-align:center" {% if edit_mode %}readonly{% endif %}>
+    </div>
+  </div>
+
+  <!-- SECCIÓN DATOS PROVEEDOR Y ÁREA -->
+  <div class="section-title">Datos Generales</div>
+  <div class="provider-grid">
+    <div class="provider-col">
+      <div style="position: relative; width: 100%;">
+        <input class="provider-name-input" id="prov-nombre" placeholder="Nombre del proveedor" autocomplete="off">
+        <div id="custom-dropdown" class="custom-dropdown"></div>
+      </div>
+      
+      <div class="provider-row">
+        <span class="lbl">RUC / DNI:</span>
+        <input class="field" id="prov-ruc" placeholder="RUC o DNI proveedor">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">Banco:</span>
+        <select class="provider-bank-select" id="prov-banco">
+          <option value="BCP">BCP</option>
+          <option value="BBVA">BBVA</option>
+          <option value="INTERBANK">INTERBANK</option>
+          <option value="SCOTIABANK">SCOTIABANK</option>
+          <option value="BANBIF">BANBIF</option>
+          <option value="BANCO DE LA NACIÓN">BANCO DE LA NACIÓN</option>
+          <option value="OTROS">OTROS</option>
+        </select>
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° Cuenta:</span>
+        <input class="field" id="prov-cta-soles" placeholder="Número de cuenta">
+      </div>
+    </div>
+    
+    <div class="provider-col">
+      <div style="position: relative; width: 100%;">
+        <input class="provider-name-input" id="solicitante" value="CONTABILIDAD" placeholder="Área responsable">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">Fecha:</span>
+        <input class="field" id="fecha" type="text" value="{{ datetime_hoy }}">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">Titular Cuenta:</span>
+        <input class="field" id="prov-contacto-nombre" placeholder="Titular de la cuenta">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">Dirección:</span>
+        <input class="field" id="prov-dir" placeholder="Dirección del proveedor">
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE DETALLES -->
+  <div class="items-wrapper">
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Detalle / Descripción</th>
+          <th style="width:180px">N° Comprobante</th>
+          <th style="width:140px; text-align:right;">Monto</th>
+          <th style="width:40px" class="no-print"></th>
+        </tr>
+      </thead>
+      <tbody id="items-body">
+        <!-- Generado dinámicamente -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="no-print" style="margin-top: 10px;">
+    <button class="btn btn-outline" onclick="addRow()">➕ Agregar Fila</button>
+  </div>
+
+  <!-- TOTALES Y REGISTRO DE PAGOS -->
+  <div class="summary-wrapper" style="margin-top: 20px;">
+    <div style="width: 50%;">
+      <!-- REGISTRO DE PAGOS -->
+      <div class="registro-pagos-container">
+        <div class="registro-pagos-title">Registro de Pagos</div>
+        <div class="registro-pagos-bar" id="registro-pagos-monto">PAGO | S/ 0.00</div>
+      </div>
+    </div>
+    
+    <div class="summary-table-wrapper" style="width: 45%;">
+      <table class="summary-table">
+        <tr class="total-row">
+          <td>Total General</td>
+          <td id="total-igv">S/ 0.00</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer-total-text" id="footer-total">TOTAL GENERAL: S/ 0.00</div>
+
+  <!-- SECCIÓN DE FIRMAS -->
+  <div class="signature-section" style="margin-top: 50px;">
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <input class="sig-input" id="sig-tesoreria-name" placeholder="Nombre Tesorero">
+      <div class="sig-title">ÁREA TESORERÍA</div>
+    </div>
+    
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <input class="sig-input" id="sig-solicitante-name" placeholder="Nombre Solicitante">
+      <div class="sig-title">ÁREA SOLICITANTE</div>
+    </div>
+    
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <input class="sig-input" id="sig-gerente-name" placeholder="Nombre Gerente">
+      <div class="sig-title">GERENCIA</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SCRIPTS DE LÓGICA -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+  // Parámetros de edición pasados por Flask
+  const EDIT_MODE = {% if edit_mode %}true{% else %}false{% endif %};
+  const EDIT_FILENAME = "{{ edit_filename }}";
+
+  // Fecha por defecto si no es edición
+  if (!EDIT_MODE) {
+    const hoy = new Date();
+    const dia = String(hoy.getDate()).padStart(2, '0');
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    const anio = hoy.getFullYear();
+    document.getElementById('fecha').value = `${dia}/${mes}/${anio}`;
+  }
+
+  // Listas de datos para autocompletado
+  let listaProveedores = [];
+  let listaMisEmpresas = [];
+
+  const inputProv = document.getElementById('prov-nombre');
+  const dropdownMenu = document.getElementById('custom-dropdown');
+  const inputEmpresa = document.getElementById('razon-social');
+  const dropdownEmpresa = document.getElementById('mi-empresa-dropdown');
+
+  document.addEventListener("DOMContentLoaded", () => {
+    fetch('/get_proveedores?_=' + Date.now())
+      .then(r => r.json())
+      .then(data => { 
+        listaProveedores = data;
+        return fetch('/get_mis_empresas?_=' + Date.now());
+      })
+      .then(r => r.json())
+      .then(data => {
+        listaMisEmpresas = data;
+        if (EDIT_MODE) {
+          cargarMetadatosDeEdicion();
+        } else {
+          initialItems.forEach(addRow);
+        }
+      });
+  });
+
+  async function cargarMetadatosDeEdicion() {
+    try {
+      const res = await fetch(`/get_metadata/pagos/${EDIT_FILENAME}`);
+      const result = await res.json();
+      if (result.success) {
+        const data = result.data;
+        
+        // Cargar campos básicos
+        document.getElementById('oc-number').value = data.oc_number || '';
+        document.getElementById('razon-social').value = data.razon_social || '';
+        document.getElementById('ruc').value = data.ruc || '';
+        document.getElementById('direccion').value = data.direccion || '';
+        document.getElementById('solicitante').value = data.solicitante || 'CONTABILIDAD';
+        document.getElementById('fecha').value = data.fecha || '';
+        
+        // Proveedor
+        document.getElementById('prov-nombre').value = data.prov_nombre || '';
+        document.getElementById('prov-ruc').value = data.prov_ruc || '';
+        document.getElementById('prov-cta-soles').value = data.prov_cta_soles || '';
+        document.getElementById('prov-dir').value = data.prov_dir || '';
+        document.getElementById('prov-banco').value = data.prov_banco || 'BCP';
+        document.getElementById('prov-contacto-nombre').value = data.prov_contacto_nombre || '';
+        
+        // Firmas
+        document.getElementById('sig-tesoreria-name').value = data.sig_tesoreria_name || '';
+        document.getElementById('sig-solicitante-name').value = data.sig_solicitante_name || '';
+        document.getElementById('sig-gerente-name').value = data.sig_gerente_name || '';
+        
+        // Moneda
+        simboloMoneda = data.simbolo_moneda || 'S/';
+        document.getElementById('btn-currency-toggle').textContent = simboloMoneda === 'S/' ? "💱 Moneda: Soles (S/)" : "💱 Moneda: Dólares ($)";
+        
+        // Cargar ítems de la tabla
+        document.getElementById('items-body').innerHTML = '';
+        if (data.items && data.items.length > 0) {
+          data.items.forEach(item => addRow(item));
+        } else {
+          initialItems.forEach(addRow);
+        }
+        recalc();
+      } else {
+        alert("⚠️ No se pudieron cargar los metadatos para editar este archivo: " + result.message);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("❌ Error al conectar con el servidor para obtener los datos de edición.");
+    }
+  }
+
+  // Autocompletado de Proveedor
+  inputProv.addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    dropdownMenu.innerHTML = '';
+    
+    if (!val) {
+      dropdownMenu.style.display = 'none';
+      return;
+    }
+
+    const filtrados = listaProveedores.filter(p => p.nombre.toLowerCase().includes(val));
+
+    if (filtrados.length > 0) {
+      dropdownMenu.style.display = 'block';
+      filtrados.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.textContent = p.nombre;
+        
+        item.onclick = () => {
+          inputProv.value = p.nombre;
+          document.getElementById('prov-ruc').value = p.ruc;
+          document.getElementById('prov-dir').value = p.direccion;
+          document.getElementById('prov-banco').value = p.banco || 'BCP';
+          document.getElementById('prov-contacto-nombre').value = p.contacto_nombre || p.nombre;
+          document.getElementById('prov-cta-soles').value = p.cuenta_soles || '';
+          dropdownMenu.style.display = 'none';
+        };
+        dropdownMenu.appendChild(item);
+      });
+    } else {
+      dropdownMenu.style.display = 'none';
+    }
+  });
+
+  // Autocompletado de Mis Empresas (Razón Social Emisor)
+  function renderizarDropdownEmpresas(filtro = '') {
+    dropdownEmpresa.innerHTML = '';
+    const filtradas = listaMisEmpresas.filter(e => 
+      e.razon_social.toLowerCase().includes(filtro.toLowerCase())
+    );
+
+    if (filtradas.length > 0) {
+      dropdownEmpresa.style.display = 'block';
+      filtradas.forEach(e => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.textContent = e.razon_social;
+        
+        item.onclick = () => {
+          inputEmpresa.value = e.razon_social;
+          document.getElementById('ruc').value = e.ruc;
+          document.getElementById('direccion').value = e.direccion;
+          dropdownEmpresa.style.display = 'none';
+        };
+        dropdownEmpresa.appendChild(item);
+      });
+    } else {
+      dropdownEmpresa.style.display = 'none';
+    }
+  }
+
+  inputEmpresa.addEventListener('focus', function() {
+    renderizarDropdownEmpresas(this.value);
+  });
+
+  inputEmpresa.addEventListener('input', function() {
+    renderizarDropdownEmpresas(this.value);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (e.target !== inputProv) {
+      dropdownMenu.style.display = 'none';
+    }
+    if (e.target !== inputEmpresa) {
+      dropdownEmpresa.style.display = 'none';
+    }
+  });
+
+  async function registrarProv() {
+    const p = {
+      nombre: document.getElementById('prov-nombre').value,
+      ruc: document.getElementById('prov-ruc').value,
+      direccion: document.getElementById('prov-dir').value,
+      banco: document.getElementById('prov-banco').value,
+      contacto_nombre: document.getElementById('prov-contacto-nombre').value,
+      contacto_telefono: '',
+      contacto: '',
+      cuenta_soles: document.getElementById('prov-cta-soles').value,
+      cci: '',
+      cuenta_dolares: ''
+    };
+    if (!p.nombre) return;
+    
+    try {
+      const res = await fetch('/guardar_proveedor', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(p)
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        const pRes = await fetch('/get_proveedores?_=' + Date.now());
+        listaProveedores = await pRes.json();
+      }
+    } catch (e) {
+      console.error("Error al registrar proveedor:", e);
+    }
+  }
+
+  // Variables Globales de Formulario
+  let simboloMoneda = 'S/';
+
+  function toggleCurrency() {
+    const btn = document.getElementById('btn-currency-toggle');
+    if (simboloMoneda === 'S/') {
+      simboloMoneda = '$';
+      btn.textContent = "💱 Moneda: Dólares ($)";
+    } else {
+      simboloMoneda = 'S/';
+      btn.textContent = "💱 Moneda: Soles (S/)";
+    }
+    recalc();
+  }
+
+  const initialItems = [
+    { detalle: '', comprobante: '', monto: ''},
+    { detalle: '', comprobante: '', monto: ''},
+    { detalle: '', comprobante: '', monto: ''},
+  ];
+
+  function addRow(data = {}) {
+    const tbody = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${data.detalle||''}" placeholder="Detalle / Descripción del pago" oninput="recalc()"></td>
+      <td><input type="text" value="${data.comprobante||''}" placeholder="Comprobante (ej. E001-422)" oninput="recalc()"></td>
+      <td class="money"><input type="number" value="${data.monto !== undefined ? data.monto : ''}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
+      <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+  }
+
+  function delRow(btn) {
+    btn.closest('tr').remove();
+    recalc();
+  }
+
+  function recalc() {
+    const rows = document.querySelectorAll('#items-body tr');
+    let total = 0;
+    
+    rows.forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      const monto = parseFloat(inputs[2]?.value) || 0;
+      total += monto;
+    });
+
+    document.getElementById('total-igv').textContent = simboloMoneda + ' ' + total.toFixed(2);
+    document.getElementById('footer-total').textContent = 'TOTAL GENERAL: ' + simboloMoneda + ' ' + total.toFixed(2);
+    document.getElementById('registro-pagos-monto').textContent = 'PAGO | ' + simboloMoneda + ' ' + total.toFixed(2);
+  }
+
+  async function guardarEnHistorial() {
+    const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Orden de Pago?' : '¿Deseas guardar esta Orden de Pago en el historial?';
+    if (!confirm(confirmMsg)) return;
+
+    await registrarProv(); 
+
+    window.scrollTo(0, 0);
+
+    const elemento = document.getElementById('oc-doc');
+    const numeroOP = document.getElementById('oc-number').value || 'SinNumero';
+    const nombreArchivo = `OP_${numeroOP}.pdf`;
+
+    const items = [];
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      if (inputs.length >= 3) {
+        items.push({
+          detalle: inputs[0].value,
+          comprobante: inputs[1].value,
+          monto: parseFloat(inputs[2].value) || 0
+        });
+      }
+    });
+
+    const metadata = {
+      oc_number: numeroOP,
+      razon_social: document.getElementById('razon-social').value,
+      ruc: document.getElementById('ruc').value,
+      direccion: document.getElementById('direccion').value,
+      solicitante: document.getElementById('solicitante').value,
+      fecha: document.getElementById('fecha').value,
+      
+      prov_nombre: document.getElementById('prov-nombre').value,
+      prov_ruc: document.getElementById('prov-ruc').value,
+      prov_cta_soles: document.getElementById('prov-cta-soles').value,
+      prov_cta_dolares: '',
+      prov_dir: document.getElementById('prov-dir').value,
+      prov_banco: document.getElementById('prov-banco').value,
+      prov_contacto_nombre: document.getElementById('prov-contacto-nombre').value,
+      
+      sig_tesoreria_name: document.getElementById('sig-tesoreria-name').value,
+      sig_solicitante_name: document.getElementById('sig-solicitante-name').value,
+      sig_gerente_name: document.getElementById('sig-gerente-name').value,
+      
+      simbolo_moneda: simboloMoneda,
+      items: items
+    };
+
+    const opciones = {
+      margin:       [10, 10, 10, 10], 
+      filename:     nombreArchivo,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        scrollY: 0, 
+        windowWidth: document.documentElement.scrollWidth
+      },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: 'avoid-all' }
+    };
+
+    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+      const formData = new FormData();
+      formData.append('pdf', pdfBlob, nombreArchivo);
+      formData.append('items', JSON.stringify(items));
+      formData.append('edit_mode', EDIT_MODE ? 'true' : 'false');
+      formData.append('metadata', JSON.stringify(metadata));
+
+      fetch('/guardar_pdf', {
+        method: 'POST',
+        body: formData
+      })
+      .then(respuesta => respuesta.json())
+      .then(datos => {
+        if (datos.success) {
+          alert('✅ ¡Orden de Pago guardada exitosamente!');
+          window.location.href = '/historial';
+        } else {
+          alert('❌ Error del servidor: ' + datos.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al intentar guardar.');
+      });
+    });
+  }
+</script>
+
+<script>
+    // Inicializar tema al cargar la página
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+</script>
+</body>
+</html>

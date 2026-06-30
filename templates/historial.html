@@ -78,7 +78,7 @@
 </div>
 
 <div class="historial-container">
-    
+    {% if session['rol'] == 'sistemas' %}
     <div class="columna-historial">
         <h2 style="color: #1a4971; border-bottom: 2px solid #1a4971; padding-bottom: 5px;">📦 Órdenes de Compra</h2>
         <ul class="lista-archivos">
@@ -112,7 +112,24 @@
             {% endfor %}
         </ul>
     </div>
-
+    {% elif session['rol'] == 'contabilidad' %}
+    <div class="columna-historial" style="grid-column: span 2;">
+        <h2 style="color: #c02c2c; border-bottom: 2px solid #c02c2c; padding-bottom: 5px;">💳 Órdenes de Pago</h2>
+        <ul class="lista-archivos">
+            {% for archivo in pagos %}
+            <li class="archivo-item">
+                <span class="archivo-nombre">{{ archivo }}</span>
+                <div style="display: flex; gap: 5px;">
+                    <a href="{{ url_for('ver_pdf', tipo='pagos', nombre=archivo) }}" target="_blank" class="btn-ver" style="background: #c02c2c;">Ver PDF</a>
+                    <a href="/pagos?edit={{ archivo }}" class="btn-ver" style="background: #e67e22;">Editar</a>
+                </div>
+            </li>
+            {% else %}
+            <p class="vacio">No hay órdenes de pago guardadas aún.</p>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
 </div>
 
 <script>

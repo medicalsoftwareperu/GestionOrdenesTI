@@ -27,12 +27,18 @@
 
     <div class="row text-center mb-4">
         <div class="col">
+            {% if session['rol'] == 'sistemas' %}
             <h1 class="display-5 fw-bold text-primary">Panel de Gestión TI</h1>
             <p class="lead text-muted">Generación y control de guías de compra y baja de equipos</p>
+            {% elif session['rol'] == 'contabilidad' %}
+            <h1 class="display-5 fw-bold text-danger">Panel de Gestión de Pagos</h1>
+            <p class="lead text-muted">Generación y control de órdenes de pago para contabilidad</p>
+            {% endif %}
         </div>
     </div>
 
     <div class="row justify-content-center g-4">
+        {% if session['rol'] == 'sistemas' %}
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-primary">
                 <div class="card-body text-center">
@@ -52,6 +58,17 @@
                 </div>
             </div>
         </div>
+        {% elif session['rol'] == 'contabilidad' %}
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-danger">
+                <div class="card-body text-center">
+                    <h3 class="card-title text-danger">💳 Orden de Pago</h3>
+                    <p class="card-text">Generar una nueva orden de pago para proveedores con formato contable.</p>
+                    <a href="/pagos" class="btn btn-danger btn-lg mt-3 w-100">Crear Orden</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-success">
