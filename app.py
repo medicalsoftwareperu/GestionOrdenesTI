@@ -90,6 +90,7 @@ with get_db_connection() as conn:
             direccion TEXT,
             contacto TEXT,
             cuenta_soles TEXT,
+            cci TEXT,
             cuenta_dolares TEXT,
             banco TEXT DEFAULT 'BCP',
             contacto_nombre TEXT DEFAULT '',
@@ -153,7 +154,11 @@ with get_db_connection() as conn:
     for query in [
         'ALTER TABLE proveedores ADD COLUMN banco TEXT DEFAULT "BCP"',
         'ALTER TABLE proveedores ADD COLUMN contacto_nombre TEXT DEFAULT ""',
-        'ALTER TABLE proveedores ADD COLUMN contacto_telefono TEXT DEFAULT ""'
+        'ALTER TABLE proveedores ADD COLUMN contacto_telefono TEXT DEFAULT ""',
+        'ALTER TABLE proveedores_conta ADD COLUMN cci TEXT DEFAULT ""',
+        'ALTER TABLE proveedores_conta ADD COLUMN banco TEXT DEFAULT "BCP"',
+        'ALTER TABLE proveedores_conta ADD COLUMN contacto_nombre TEXT DEFAULT ""',
+        'ALTER TABLE proveedores_conta ADD COLUMN contacto_telefono TEXT DEFAULT ""'
     ]:
         try:
             conn.execute(query)
