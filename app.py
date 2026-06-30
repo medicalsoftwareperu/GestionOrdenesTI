@@ -122,6 +122,18 @@ with get_db_connection() as conn:
             except Exception:
                 pass
         conn.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('bajas', val_bajas))
+    
+    # Agregar columnas dinámicamente si no existen
+    for query in [
+        'ALTER TABLE proveedores ADD COLUMN banco TEXT DEFAULT "BCP"',
+        'ALTER TABLE proveedores ADD COLUMN contacto_nombre TEXT DEFAULT ""',
+        'ALTER TABLE proveedores ADD COLUMN contacto_telefono TEXT DEFAULT ""'
+    ]:
+        try:
+            conn.execute(query)
+        except sqlite3.OperationalError:
+            pass
+            
     conn.commit()
 
 
@@ -363,16 +375,19 @@ def guardar_proveedor():
     try:
         with get_db_connection() as conn:
             conn.execute('''
-                INSERT OR REPLACE INTO proveedores (nombre, ruc, direccion, contacto, cuenta_soles, cci, cuenta_dolares)
-                VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                INSERT OR REPLACE INTO proveedores (nombre, ruc, direccion, contacto, cuenta_soles, cci, cuenta_dolares, banco, contacto_nombre, contacto_telefono)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                 (
                     data.get('nombre'), 
                     data.get('ruc'), 
                     data.get('direccion'), 
-                    data.get('contacto'), 
+                    data.get('contacto', ''), 
                     data.get('cuenta_soles', ''),   
                     data.get('cci', ''),            
-                    data.get('cuenta_dolares', '')
+                    data.get('cuenta_dolares', ''),
+                    data.get('banco', 'BCP'),
+                    data.get('contacto_nombre', ''),
+                    data.get('contacto_telefono', '')
                 ))
             conn.commit()
         return jsonify({"success": True})

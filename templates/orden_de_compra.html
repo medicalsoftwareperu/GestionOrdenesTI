@@ -92,26 +92,43 @@
         <input class="field" id="prov-ruc" placeholder="RUC proveedor">
       </div>
       <div class="provider-row">
-        <span class="lbl">N° CTA. SOLES BCP</span>
+        <span class="lbl">N° CTA. SOLES</span>
         <input class="field" id="prov-cta-soles" placeholder="">
       </div>
       <div class="provider-row">
-        <span class="lbl">N° CCI BCP</span>
+        <span class="lbl">N° CCI</span>
         <input class="field" id="prov-cci" placeholder="">
       </div>
     </div>
     <div class="provider-col">
-      <div style="height:34px"></div>
+      <div class="provider-row">
+        <span class="lbl">Banco:</span>
+        <select class="field" id="prov-banco" style="font-weight: 600;">
+          <option value="BCP">BCP</option>
+          <option value="BBVA">BBVA</option>
+          <option value="INTERBANK">INTERBANK</option>
+          <option value="SCOTIABANK">SCOTIABANK</option>
+          <option value="BANBIF">BANBIF</option>
+          <option value="BANCO DE LA NACIÓN">BANCO DE LA NACIÓN</option>
+          <option value="OTROS">OTROS</option>
+        </select>
+      </div>
       <div class="provider-row">
         <span class="lbl">Dirección:</span>
         <input class="field" id="prov-dir" placeholder="Dirección proveedor">
       </div>
-      <div class="provider-row">
-        <span class="lbl">N° Contacto:</span>
-        <input class="field" id="prov-contacto" placeholder="Teléfono">
+      <div class="provider-row" style="display: flex; gap: 10px; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 4px; flex: 1.2;">
+          <span class="lbl">Contacto:</span>
+          <input class="field" id="prov-contacto-nombre" placeholder="Nombre contacto">
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px; flex: 0.8;">
+          <span class="lbl">N° Teléf:</span>
+          <input class="field" id="prov-contacto-telefono" placeholder="Número">
+        </div>
       </div>
       <div class="provider-row">
-        <span class="lbl">N° CTA. DÓLARES BCP</span>
+        <span class="lbl">N° CTA. DÓLARES</span>
         <input class="field" id="prov-cta-dolares" placeholder="">
       </div>
     </div>
@@ -268,7 +285,9 @@
         document.getElementById('prov-cci').value = data.prov_cci || '';
         document.getElementById('prov-cta-dolares').value = data.prov_cta_dolares || '';
         document.getElementById('prov-dir').value = data.prov_dir || '';
-        document.getElementById('prov-contacto').value = data.prov_contacto || '';
+        document.getElementById('prov-banco').value = data.prov_banco || 'BCP';
+        document.getElementById('prov-contacto-nombre').value = data.prov_contacto_nombre || '';
+        document.getElementById('prov-contacto-telefono').value = data.prov_contacto_telefono || data.prov_contacto || '';
         
         // Observaciones
         document.getElementById('obs-encargado').value = data.obs_encargado || '';
@@ -350,7 +369,9 @@
           inputProv.value = p.nombre;
           document.getElementById('prov-ruc').value = p.ruc;
           document.getElementById('prov-dir').value = p.direccion;
-          document.getElementById('prov-contacto').value = p.contacto;
+          document.getElementById('prov-banco').value = p.banco || 'BCP';
+          document.getElementById('prov-contacto-nombre').value = p.contacto_nombre || '';
+          document.getElementById('prov-contacto-telefono').value = p.contacto_telefono || p.contacto || '';
           document.getElementById('prov-cta-soles').value = p.cuenta_soles || '';
           document.getElementById('prov-cci').value = p.cci || '';
           document.getElementById('prov-cta-dolares').value = p.cuenta_dolares || '';
@@ -418,7 +439,10 @@
       nombre: document.getElementById('prov-nombre').value,
       ruc: document.getElementById('prov-ruc').value,
       direccion: document.getElementById('prov-dir').value,
-      contacto: document.getElementById('prov-contacto').value,
+      banco: document.getElementById('prov-banco').value,
+      contacto_nombre: document.getElementById('prov-contacto-nombre').value,
+      contacto_telefono: document.getElementById('prov-contacto-telefono').value,
+      contacto: document.getElementById('prov-contacto-telefono').value, // compatibility
       cuenta_soles: document.getElementById('prov-cta-soles').value,
       cci: document.getElementById('prov-cci').value,
       cuenta_dolares: document.getElementById('prov-cta-dolares').value
@@ -594,7 +618,10 @@
       prov_cci: document.getElementById('prov-cci').value,
       prov_cta_dolares: document.getElementById('prov-cta-dolares').value,
       prov_dir: document.getElementById('prov-dir').value,
-      prov_contacto: document.getElementById('prov-contacto').value,
+      prov_banco: document.getElementById('prov-banco').value,
+      prov_contacto_nombre: document.getElementById('prov-contacto-nombre').value,
+      prov_contacto_telefono: document.getElementById('prov-contacto-telefono').value,
+      prov_contacto: document.getElementById('prov-contacto-telefono').value, // compatibility
       
       obs_encargado: document.getElementById('obs-encargado').value,
       obs_dni: document.getElementById('obs-dni').value,
