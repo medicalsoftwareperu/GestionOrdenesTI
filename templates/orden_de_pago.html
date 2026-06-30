@@ -74,45 +74,38 @@
   <button class="btn btn-success" onclick="guardarEnHistorial()">💾 Guardar</button>
 </div>
 
-<div class="card" id="oc-doc">
+<div class="card" id="oc-doc" style="padding: 0; overflow: hidden;">
   
-  <!-- CABECERA (LOGO TÍTULO EMISOR, TÍTULO DOC, NÚMERO VOUCHER) -->
-  <div class="doc-header" style="border-bottom: 3px solid var(--blue); margin-bottom: 15px;">
-    <!-- Razón Social del Emisor destacada como título a la izquierda -->
-    <div class="logo-cell" style="border-right: 2px solid var(--gray-mid); flex-direction: column; align-items: flex-start; justify-content: center; padding: 10px 16px; min-width: 250px;">
-      <div style="position: relative; width: 100%;">
-        <input class="company-name-input" id="razon-social" placeholder="RAZÓN SOCIAL (EMISOR)" autocomplete="off" style="font-size: 16px; font-weight: 800; color: var(--blue); border: none; background: transparent; outline: none; width: 100%; text-transform: uppercase;">
-        <div id="mi-empresa-dropdown" class="custom-dropdown" style="left: 0; width: 100%;"></div>
-      </div>
+  <!-- CABECERA ROJA SUPERIOR: EMISOR (RAZÓN SOCIAL, RUC, DIRECCIÓN) -->
+  <div style="background: var(--blue); color: white; padding: 12px 10px; text-align: center; font-family: 'Barlow Condensed', sans-serif; border-bottom: 2px solid var(--blue-dark);">
+    <div style="position: relative; width: 100%; display: flex; justify-content: center;">
+      <input class="company-name-input" id="razon-social" placeholder="RAZÓN SOCIAL (EMISOR)" autocomplete="off" style="font-size: 22px; font-weight: bold; color: white; border: none; background: transparent; outline: none; text-align: center; width: 80%; text-transform: uppercase;">
+      <div id="mi-empresa-dropdown" class="custom-dropdown" style="left: 10%; width: 80%; color: #333; text-align: left; margin-top: 30px;"></div>
     </div>
-    <div class="doc-title-cell">
-      <div class="doc-title">Orden de Pago</div>
+    <div style="margin-top: 4px; display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 11px;">
+      <span>RUC:</span>
+      <input id="ruc" placeholder="RUC Emisor" style="border: none; background: transparent; outline: none; font-size: 11px; color: white; text-align: center; width: 120px; font-weight: bold;">
     </div>
-    <div class="doc-num-cell" style="min-width: 170px;">
-      <div class="doc-num-label">VOUCHER N°</div>
-      <input class="doc-num-input" id="oc-number" value="{{ numero_op }}" maxlength="12" readonly>
+    <div style="margin-top: 2px; display: flex; justify-content: center; align-items: center; gap: 4px; font-size: 11px;">
+      <span>Dirección:</span>
+      <input id="direccion" placeholder="Dirección Emisor" style="border: none; background: transparent; outline: none; font-size: 11px; color: white; text-align: center; width: 450px; font-weight: bold; text-transform: uppercase;">
     </div>
   </div>
 
-  <!-- GRILLA DE DATOS GENERALES -->
-  <div class="data-grid cols-4" style="border-top: 1px solid var(--gray-mid);">
-    <!-- FILA 1: R.U.C. (EMISOR) -->
-    <div class="data-cell">
-      <span class="lbl">R.U.C. (Emisor):</span>
+  <!-- FILA DE TÍTULO Y VOUCHER -->
+  <div class="doc-header" style="border-bottom: 2px solid var(--gray-mid); margin: 0; padding: 0; display: flex; align-items: center;">
+    <div class="doc-title-cell" style="padding: 10px 16px; width: 50%; text-align: left;">
+      <div class="doc-title" style="font-size: 22px; color: #333; text-align: left; font-family: 'Barlow Condensed', sans-serif;">Orden de Pago</div>
     </div>
-    <div class="data-cell span-3">
-      <input class="field" id="ruc" placeholder="RUC Emisor" style="font-weight: bold;">
+    <div class="doc-num-cell" style="width: 50%; padding: 10px 24px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; border-left: 2px solid var(--gray-mid); min-width: 170px;">
+      <div class="doc-num-label" style="font-size: 12px; font-weight: bold; color: var(--text-muted); margin-bottom: 0;">VOUCHER N°:</div>
+      <input class="doc-num-input" id="oc-number" value="{{ numero_op }}" style="font-size: 20px; font-weight: bold; color: var(--blue); border: none; background: transparent; text-align: right; width: 140px; outline: none;" readonly>
     </div>
+  </div>
 
-    <!-- FILA 2: DIRECCIÓN (EMISOR) -->
-    <div class="data-cell">
-      <span class="lbl">Dirección (Emisor):</span>
-    </div>
-    <div class="data-cell span-3">
-      <input class="field" id="direccion" placeholder="Dirección Emisor" style="font-weight: bold; text-transform: uppercase;">
-    </div>
-
-    <!-- FILA 3: FECHA Y ÁREA RESPONSABLE -->
+  <!-- GRILLA DE DATOS GENERALES (FECHA, PROVEEDOR, BANCO, ETC.) -->
+  <div class="data-grid cols-4" style="border-top: none;">
+    <!-- FILA 1: FECHA Y ÁREA RESPONSABLE -->
     <div class="data-cell">
       <span class="lbl">FECHA</span>
     </div>
@@ -126,7 +119,7 @@
       <input class="field" id="solicitante" value="CONTABILIDAD" style="font-weight: bold; color: var(--blue);">
     </div>
 
-    <!-- FILA 4: PROVEEDOR -->
+    <!-- FILA 2: PROVEEDOR -->
     <div class="data-cell">
       <span class="lbl">PROVEEDOR</span>
     </div>
@@ -137,7 +130,7 @@
       </div>
     </div>
 
-    <!-- FILA 5: RUC / DNI -->
+    <!-- FILA 3: RUC / DNI -->
     <div class="data-cell">
       <span class="lbl">RUC / DNI</span>
     </div>
@@ -145,7 +138,7 @@
       <input class="field" id="prov-ruc" placeholder="RUC o DNI proveedor" style="font-weight: bold;">
     </div>
 
-    <!-- FILA 6: BANCO -->
+    <!-- FILA 4: BANCO -->
     <div class="data-cell">
       <span class="lbl">BANCO</span>
     </div>
@@ -161,7 +154,7 @@
       </select>
     </div>
 
-    <!-- FILA 7: TITULAR CUENTA -->
+    <!-- FILA 5: TITULAR CUENTA -->
     <div class="data-cell">
       <span class="lbl">TITULAR CUENTA</span>
     </div>
@@ -169,7 +162,7 @@
       <input class="field" id="prov-contacto-nombre" placeholder="Titular de la cuenta" style="font-weight: bold; text-transform: uppercase;">
     </div>
 
-    <!-- FILA 8: N° CUENTA -->
+    <!-- FILA 6: N° CUENTA -->
     <div class="data-cell">
       <span class="lbl">N° CUENTA</span>
     </div>
@@ -179,7 +172,7 @@
   </div>
 
   <!-- TABLA DE DETALLES -->
-  <div class="items-wrapper" style="margin-top: 15px;">
+  <div class="items-wrapper" style="margin-top: 15px; padding: 0 16px;">
     <table class="items-table">
       <thead>
         <tr>
@@ -196,7 +189,7 @@
   </div>
 
   <!-- TOTAL GENERAL -->
-  <div class="totals-area" style="justify-content: flex-end; padding: 10px 16px;">
+  <div class="totals-area" style="justify-content: flex-end; padding: 10px 24px; border-top: none;">
     <div class="total-line">
       <span class="total-lbl">Total General:</span>
       <span class="total-val grand" id="total-igv">S/ 0.00</span>
@@ -204,12 +197,14 @@
   </div>
 
   <!-- SECCIÓN REGISTRO DE PAGOS (FILA COMPLETA) -->
-  <div class="registro-pagos-container">
-    <div class="registro-pagos-title">Registro de Pagos</div>
-    <div class="registro-pagos-bar" id="registro-pagos-monto">PAGO | S/ 0.00</div>
+  <div style="padding: 0 16px;">
+    <div class="registro-pagos-container">
+      <div class="registro-pagos-title">Registro de Pagos</div>
+      <div class="registro-pagos-bar" id="registro-pagos-monto">PAGO | S/ 0.00</div>
+    </div>
   </div>
 
-  <div class="footer-total-text" id="footer-total">TOTAL GENERAL: S/ 0.00</div>
+  <div class="footer-total-text" id="footer-total" style="padding: 0 24px 10px;">TOTAL GENERAL: S/ 0.00</div>
 
   <!-- SECCIÓN DE FIRMAS EQUITATIVAS -->
   <div class="sigs" style="margin-top: 40px; display: flex; justify-content: space-between; border-top: 1px solid var(--gray-mid); width: 100%;">
