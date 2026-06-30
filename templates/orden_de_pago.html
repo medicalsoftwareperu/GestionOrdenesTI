@@ -59,6 +59,20 @@
         color: #fff !important;
         border-bottom: 1px solid #fff;
       }
+      /* Forzar textos del emisor en color negro y negrita al imprimir */
+      #emisor-top-bar {
+        background: transparent !important;
+        border-bottom: 2px solid #000 !important;
+      }
+      #emisor-top-bar span,
+      #emisor-top-bar input,
+      #emisor-top-bar #razon-social {
+        color: #000 !important;
+        font-weight: bold !important;
+      }
+      .sig-name-input {
+        color: #000 !important;
+      }
     }
   </style>
 </head>
@@ -77,7 +91,7 @@
 <div class="card" id="oc-doc" style="padding: 0; overflow: hidden;">
   
   <!-- CABECERA ROJA SUPERIOR: EMISOR (RAZÓN SOCIAL, RUC, DIRECCIÓN) -->
-  <div style="background: var(--blue); color: white; padding: 12px 10px; text-align: center; font-family: 'Barlow Condensed', sans-serif; border-bottom: 2px solid var(--blue-dark);">
+  <div id="emisor-top-bar" style="background: var(--blue); color: white; padding: 12px 10px; text-align: center; font-family: 'Barlow Condensed', sans-serif; border-bottom: 2px solid var(--blue-dark);">
     <div style="position: relative; width: 100%; display: flex; justify-content: center;">
       <input class="company-name-input" id="razon-social" placeholder="RAZÓN SOCIAL (EMISOR)" autocomplete="off" style="font-size: 22px; font-weight: bold; color: white; border: none; background: transparent; outline: none; text-align: center; width: 80%; text-transform: uppercase;">
       <div id="mi-empresa-dropdown" class="custom-dropdown" style="left: 10%; width: 80%; color: #333; text-align: left; margin-top: 30px;"></div>
