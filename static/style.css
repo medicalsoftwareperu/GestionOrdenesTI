@@ -287,6 +287,12 @@
     width: 100%;
     padding: 2px 4px;
     cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  select.provider-bank-select::-ms-expand {
+    display: none;
   }
   select.provider-bank-select option {
     background: var(--dropdown-bg);
