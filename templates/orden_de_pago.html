@@ -47,6 +47,10 @@
       .no-print, .btn-del-row {
         display: none !important;
       }
+      #oc-doc {
+        border: 2px solid var(--blue) !important;
+        box-sizing: border-box !important;
+      }
       .registro-pagos-container {
         border-color: #000 !important;
       }
@@ -59,15 +63,20 @@
         color: #fff !important;
         border-bottom: 1px solid #fff;
       }
-      /* Forzar textos del emisor en color negro y negrita al imprimir */
+      /* Relleno de rojo con letras blancas para el emisor al imprimir */
       #emisor-top-bar {
-        background: transparent !important;
-        border-bottom: 2px solid #000 !important;
+        background-color: var(--blue) !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        border-bottom: 2px solid var(--blue-dark) !important;
       }
       #emisor-top-bar span,
       #emisor-top-bar input,
       #emisor-top-bar #razon-social {
-        color: #000 !important;
+        color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
         font-weight: bold !important;
       }
       .sig-name-input {
