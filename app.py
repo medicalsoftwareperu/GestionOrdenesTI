@@ -121,6 +121,10 @@ with get_db_connection() as conn:
         INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
         VALUES (?, ?, ?)
     ''', ('ONCO TEST S.A.C.', '20547642512', 'Av. Gral Alvarez de Arenales Nro. 630'))
+    conn.execute('''
+        INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
+        VALUES (?, ?, ?)
+    ''', ('MEDICAL DIAGNOSTIC S.A.C.', '20511431752', 'AV. ARENALES NRO. 630 LIMA - LIMA - JESUS MARIA'))
     
     # Crear e inicializar tabla de contadores
     conn.execute('''
