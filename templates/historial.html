@@ -73,8 +73,11 @@
     <button class="btn btn-outline" onclick="window.location.href='/'">🏠 Volver al Inicio</button>
 </div>
 
-<div class="buscador-container">
-    <input type="text" id="buscador" class="input-buscador" placeholder="🔍 Buscar por nombre de equipo, marca, modelo o fecha (ej. 'disco', 'lenovo', '2026')..." onkeyup="buscarEnHistorial()">
+<div class="buscador-container" style="display: flex; gap: 15px; margin-top: 20px;">
+    <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por nombre de equipo, marca, modelo o fecha (ej. 'disco', 'lenovo', '2026')..." onkeyup="filtrarHistorial()">
+    <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
+        <option value="">🏢 Todos los Proveedores</option>
+    </select>
 </div>
 
 <div class="historial-container">
@@ -133,26 +136,73 @@
 </div>
 
 <script>
-    async function buscarEnHistorial() {
-        const query = document.getElementById('buscador').value.toLowerCase();
-        const itemsUI = document.querySelectorAll('.archivo-item');
-        
-        // Si el buscador está vacío, mostramos todos los archivos
-        if (query.trim() === '') {
-            itemsUI.forEach(li => li.style.display = 'flex');
-            return;
+    let mapeoProveedores = {};
+
+    // Cargar proveedores en el dropdown y el mapeo de archivos al cargar la página
+    document.addEventListener("DOMContentLoaded", async () => {
+        // Cargar proveedores de la base de datos
+        try {
+            const resProv = await fetch('/get_proveedores?_=' + Date.now());
+            const proveedores = await resProv.json();
+            const select = document.getElementById('filtro-proveedor');
+            
+            // Eliminar duplicados y ordenar alfabéticamente
+            const nombresUnicos = [...new Set(proveedores.map(p => p.nombre))].filter(Boolean).sort();
+            
+            nombresUnicos.forEach(nombre => {
+                const opt = document.createElement('option');
+                opt.value = nombre;
+                opt.textContent = nombre;
+                select.appendChild(opt);
+            });
+        } catch (e) {
+            console.error("Error cargando proveedores para filtro:", e);
         }
 
-        // Le preguntamos a la Base de Datos qué PDFs contienen esa palabra
-        const res = await fetch('/buscar_archivos?q=' + encodeURIComponent(query));
-        const archivosValidos = await res.json(); 
+        // Cargar mapeo de archivo -> proveedor
+        try {
+            const resMap = await fetch('/get_mapeo_proveedores?_=' + Date.now());
+            mapeoProveedores = await resMap.json();
+        } catch (e) {
+            console.error("Error cargando mapeo de proveedores:", e);
+        }
+    });
 
-        // Filtramos visualmente la lista
+    async function filtrarHistorial() {
+        const query = document.getElementById('buscador').value.toLowerCase().trim();
+        const provSeleccionado = document.getElementById('filtro-proveedor').value;
+        const itemsUI = document.querySelectorAll('.archivo-item');
+
+        let archivosValidosDeBusqueda = null;
+
+        // Si hay consulta por texto, le preguntamos al backend
+        if (query !== '') {
+            try {
+                const res = await fetch('/buscar_archivos?q=' + encodeURIComponent(query));
+                archivosValidosDeBusqueda = await res.json();
+            } catch (e) {
+                console.error("Error buscando archivos:", e);
+            }
+        }
+
         itemsUI.forEach(li => {
             const nombreArchivo = li.querySelector('.archivo-nombre').textContent.trim();
-            
-            // Mostrar si la BD dice que el PDF lo tiene adentro, OR si el nombre del archivo (ej. fecha) coincide
-            if (archivosValidos.includes(nombreArchivo) || nombreArchivo.toLowerCase().includes(query)) {
+            const provDeArchivo = mapeoProveedores[nombreArchivo] || '';
+
+            // 1. Filtrado por consulta de búsqueda (incluyendo nombre de archivo o contenido)
+            let pasaBusqueda = true;
+            if (archivosValidosDeBusqueda !== null) {
+                pasaBusqueda = archivosValidosDeBusqueda.includes(nombreArchivo) || nombreArchivo.toLowerCase().includes(query);
+            }
+
+            // 2. Filtrado por proveedor
+            let pasaProveedor = true;
+            if (provSeleccionado !== '') {
+                pasaProveedor = (provDeArchivo === provSeleccionado);
+            }
+
+            // Mostrar si cumple con ambos filtros
+            if (pasaBusqueda && pasaProveedor) {
                 li.style.display = 'flex';
             } else {
                 li.style.display = 'none';

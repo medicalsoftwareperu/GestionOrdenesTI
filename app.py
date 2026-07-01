@@ -488,6 +488,23 @@ def guardar_proveedor():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+@app.route('/get_mapeo_proveedores')
+def get_mapeo_proveedores():
+    mapeo = {}
+    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS]:
+        if os.path.exists(carpeta):
+            for f in os.listdir(carpeta):
+                if f.endswith('.json'):
+                    try:
+                        with open(os.path.join(carpeta, f), 'r', encoding='utf-8') as file:
+                            data = json.load(file)
+                            prov = data.get('prov_nombre')
+                            if prov:
+                                mapeo[f.replace('.json', '.pdf')] = prov
+                    except Exception:
+                        pass
+    return jsonify(mapeo)
+
 @app.route('/buscar_archivos')
 def buscar_archivos():
     q = request.args.get('q', '').lower()
