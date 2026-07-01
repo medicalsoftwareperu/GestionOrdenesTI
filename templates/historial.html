@@ -138,6 +138,17 @@
 <script>
     let mapeoProveedores = {};
 
+    // Normaliza una cadena de texto para comparaciones robustas (quita espacios, acentos, puntos y mayúsculas)
+    function normalizarParaComparar(str) {
+        if (!str) return '';
+        return str
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, '')
+            .trim();
+    }
+
     // Cargar proveedores en el dropdown y el mapeo de archivos al cargar la página
     document.addEventListener("DOMContentLoaded", async () => {
         // Cargar proveedores de la base de datos
@@ -195,10 +206,10 @@
                 pasaBusqueda = archivosValidosDeBusqueda.includes(nombreArchivo) || nombreArchivo.toLowerCase().includes(query);
             }
 
-            // 2. Filtrado por proveedor
+            // 2. Filtrado por proveedor (comparación normalizada)
             let pasaProveedor = true;
             if (provSeleccionado !== '') {
-                pasaProveedor = (provDeArchivo === provSeleccionado);
+                pasaProveedor = (normalizarParaComparar(provDeArchivo) === normalizarParaComparar(provSeleccionado));
             }
 
             // Mostrar si cumple con ambos filtros
