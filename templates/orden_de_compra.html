@@ -505,10 +505,22 @@
     const tbody = document.getElementById('items-body');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="num"><input type="text" value="${data.jira||''}" placeholder="—" oninput="recalc()"></td>
-      <td><input type="text" value="${data.desc||''}" placeholder="Descripción del ítem" oninput="recalc()"></td>
-      <td class="num"><input type="text" value="${data.marca||''}" placeholder="Marca" oninput="recalc()"></td>
-      <td class="num"><input type="text" value="${data.modelo||''}" placeholder="Modelo" oninput="recalc()"></td>
+      <td class="num">
+        <input type="text" class="print-hide" value="${data.jira||''}" placeholder="—" oninput="recalc()">
+        <span class="print-show">${data.jira||''}</span>
+      </td>
+      <td>
+        <input type="text" class="print-hide" value="${data.desc||''}" placeholder="Descripción del ítem" oninput="recalc()">
+        <span class="print-show">${data.desc||''}</span>
+      </td>
+      <td class="num">
+        <input type="text" class="print-hide" value="${data.marca||''}" placeholder="Marca" oninput="recalc()">
+        <span class="print-show">${data.marca||''}</span>
+      </td>
+      <td class="num">
+        <input type="text" class="print-hide" value="${data.modelo||''}" placeholder="Modelo" oninput="recalc()">
+        <span class="print-show">${data.modelo||''}</span>
+      </td>
       <td class="num"><input type="number" value="${data.qty !== undefined ? data.qty : 1}" min="0" oninput="recalc()"></td>
       <td class="money"><input type="number" value="${data.unit !== undefined ? data.unit : ''}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
       <td class="total-cell">${simboloMoneda} 0.00</td>
@@ -534,6 +546,14 @@
       const line = qty * unit;
       sumaLineas += line;
       tr.querySelector('.total-cell').textContent = simboloMoneda + ' ' + line.toFixed(2);
+      
+      // Sincronizar spans de impresión
+      inputs.forEach(input => {
+        const span = input.nextElementSibling;
+        if (span && span.classList.contains('print-show')) {
+          span.textContent = input.value;
+        }
+      });
     });
 
     let subtotal, igv, total;
@@ -652,7 +672,9 @@
       pagebreak:    { mode: 'avoid-all' }
     };
 
+    elemento.classList.add('pdf-printing');
     html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+      elemento.classList.remove('pdf-printing');
       const formData = new FormData();
       formData.append('pdf', pdfBlob, nombreArchivo);
       formData.append('items', JSON.stringify(items));
