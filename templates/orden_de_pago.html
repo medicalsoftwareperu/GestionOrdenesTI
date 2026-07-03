@@ -289,9 +289,29 @@
           cargarMetadatosDeEdicion();
         } else {
           initialItems.forEach(addRow);
+          if (listaMisEmpresas.length > 0) {
+            const e = listaMisEmpresas[0];
+            inputEmpresa.value = e.razon_social;
+            document.getElementById('ruc').value = e.ruc;
+            document.getElementById('direccion').value = e.direccion;
+            actualizarVoucherPorEmpresa(e.razon_social);
+          }
         }
       });
   });
+
+  async function actualizarVoucherPorEmpresa(empresaName) {
+    if (!empresaName || empresaName.trim() === '') return;
+    try {
+      const res = await fetch('/get_siguiente_voucher?empresa=' + encodeURIComponent(empresaName));
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('oc-number').value = data.voucher;
+      }
+    } catch (err) {
+      console.error("Error al obtener siguiente voucher:", err);
+    }
+  }
 
   async function cargarMetadatosDeEdicion() {
     try {
@@ -391,6 +411,9 @@
           document.getElementById('ruc').value = e.ruc;
           document.getElementById('direccion').value = e.direccion;
           dropdownEmpresa.style.display = 'none';
+          if (!EDIT_MODE) {
+            actualizarVoucherPorEmpresa(e.razon_social);
+          }
         };
         dropdownEmpresa.appendChild(item);
       });
@@ -405,6 +428,21 @@
 
   inputEmpresa.addEventListener('input', function() {
     renderizarDropdownEmpresas(this.value);
+  });
+
+  inputEmpresa.addEventListener('change', function() {
+    if (!EDIT_MODE) {
+      actualizarVoucherPorEmpresa(this.value);
+    }
+  });
+
+  inputEmpresa.addEventListener('blur', function() {
+    // Esperar un momento por si se hace click en el dropdown
+    setTimeout(() => {
+      if (!EDIT_MODE) {
+        actualizarVoucherPorEmpresa(inputEmpresa.value);
+      }
+    }, 200);
   });
 
   document.addEventListener('click', function(e) {

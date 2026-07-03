@@ -117,15 +117,15 @@ with get_db_connection() as conn:
     conn.execute('''
         INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
         VALUES (?, ?, ?)
-    ''', ('MEDICAL DENT DIGITAL', '20553850330', 'AV. ARENALES NRO. 630 LIMA - LIMA - JESUS MARIA'))
-    conn.execute('''
-        INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
-        VALUES (?, ?, ?)
     ''', ('ONCO TEST S.A.C.', '20547642512', 'Av. Gral Alvarez de Arenales Nro. 630'))
     conn.execute('''
         INSERT OR IGNORE INTO mis_empresas (razon_social, ruc, direccion)
         VALUES (?, ?, ?)
     ''', ('MEDICAL DIAGNOSTIC S.A.C.', '20511431752', 'AV. ARENALES NRO. 630 LIMA - LIMA - JESUS MARIA'))
+    
+    # Migraciones para limpiar datos solicitados
+    conn.execute("DELETE FROM mis_empresas WHERE razon_social = 'MEDICAL DENT DIGITAL'")
+    conn.execute("UPDATE mis_empresas SET razon_social = 'MEDICAL OXXO S.A.C.' WHERE razon_social = 'medical oxxo s.a.c.'")
     
     # Crear e inicializar tabla de contadores
     conn.execute('''
@@ -574,6 +574,62 @@ def buscar_archivos():
     resultados = conn.execute('SELECT DISTINCT nombre_archivo FROM items_pdf WHERE contenido LIKE ?', (f'%{q}%',)).fetchall()
     conn.close()
     return jsonify([r['nombre_archivo'] for r in resultados])
+
+def normalizar_nombre_empresa(name):
+    if not name:
+        return ''
+    import unicodedata
+    text = name.lower()
+    text = ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    text = re.sub(r'[^a-z0-9]', '', text)
+    text = text.replace('sac', '').replace('srl', '').replace('group', '').replace('ventures', '').replace('consulting', '')
+    return text.strip()
+
+def obtener_siguiente_voucher_por_empresa(empresa_name):
+    empresa_norm = normalizar_nombre_empresa(empresa_name)
+    
+    valores_inicio = {
+        'medicaldiagnostic': 11,
+        'oncotest': 12,
+        'medicaloxxo': 14,
+        'medicalmed': 11,
+        'jrglobal': 7,
+        'jl': 3
+    }
+    
+    inicio = 1
+    for k, v in valores_inicio.items():
+        if k in empresa_norm:
+            inicio = v
+            break
+            
+    max_val = 0
+    if os.path.exists(CARPETA_PAGOS):
+        for f in os.listdir(CARPETA_PAGOS):
+            if f.startswith('OP_') and f.endswith('.json'):
+                try:
+                    with open(os.path.join(CARPETA_PAGOS, f), 'r', encoding='utf-8') as file:
+                        data = json.load(file)
+                        prov_empresa = data.get('razon_social', '')
+                        if normalizar_nombre_empresa(prov_empresa) == empresa_norm:
+                            match = re.search(r'-(\d+)\.json$', f)
+                            if match:
+                                val = int(match.group(1))
+                                if val > max_val:
+                                    max_val = val
+                except Exception:
+                    pass
+                    
+    siguiente = max(inicio, max_val + 1)
+    return siguiente
+
+@app.route('/get_siguiente_voucher')
+def get_siguiente_voucher():
+    empresa = request.args.get('empresa', '').strip()
+    siguiente = obtener_siguiente_voucher_por_empresa(empresa)
+    year = datetime.now().year
+    voucher_formateado = f"{year}-{siguiente:04d}"
+    return jsonify({'success': True, 'voucher': voucher_formateado, 'numero': siguiente})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)
