@@ -74,10 +74,19 @@
 </div>
 
 <div class="buscador-container" style="display: flex; gap: 15px; margin-top: 20px;">
-    <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por nombre de equipo, marca, modelo o fecha (ej. 'disco', 'lenovo', '2026')..." onkeyup="filtrarHistorial()">
-    <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
-        <option value="">🏢 Todos los Proveedores</option>
-    </select>
+    {% if session['rol'] == 'sistemas' %}
+        <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por nombre de equipo, marca, modelo o fecha (ej. 'disco', 'lenovo', '2026')..." onkeyup="filtrarHistorial()">
+        <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
+            <option value="">🏢 Todos los Proveedores</option>
+        </select>
+    {% else %}
+        <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
+            <option value="">🏢 Todos los Proveedores</option>
+        </select>
+        <select id="filtro-razon-social" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
+            <option value="">🏢 Todas las Empresas Emisoras</option>
+        </select>
+    {% endif %}
 </div>
 
 <div class="historial-container">
@@ -137,6 +146,7 @@
 
 <script>
     let mapeoProveedores = {};
+    let mapeoEmisores = {};
 
     // Normaliza una cadena de texto para comparaciones robustas (quita espacios, acentos, puntos y mayúsculas)
     function normalizarParaComparar(str) {
@@ -153,21 +163,40 @@
     document.addEventListener("DOMContentLoaded", async () => {
         // Cargar proveedores de la base de datos
         try {
-            const resProv = await fetch('/get_proveedores?_=' + Date.now());
-            const proveedores = await resProv.json();
-            const select = document.getElementById('filtro-proveedor');
-            
-            // Eliminar duplicados y ordenar alfabéticamente
-            const nombresUnicos = [...new Set(proveedores.map(p => p.nombre))].filter(Boolean).sort();
-            
-            nombresUnicos.forEach(nombre => {
-                const opt = document.createElement('option');
-                opt.value = nombre;
-                opt.textContent = nombre;
-                select.appendChild(opt);
-            });
+            const selectProv = document.getElementById('filtro-proveedor');
+            if (selectProv) {
+                const resProv = await fetch('/get_proveedores?_=' + Date.now());
+                const proveedores = await resProv.json();
+                
+                // Eliminar duplicados y ordenar alfabéticamente
+                const nombresUnicos = [...new Set(proveedores.map(p => p.nombre))].filter(Boolean).sort();
+                
+                nombresUnicos.forEach(nombre => {
+                    const opt = document.createElement('option');
+                    opt.value = nombre;
+                    opt.textContent = nombre;
+                    selectProv.appendChild(opt);
+                });
+            }
         } catch (e) {
             console.error("Error cargando proveedores para filtro:", e);
+        }
+
+        // Cargar empresas emisoras de la base de datos
+        try {
+            const selectEmp = document.getElementById('filtro-razon-social');
+            if (selectEmp) {
+                const resEmp = await fetch('/get_mis_empresas?_=' + Date.now());
+                const empresas = await resEmp.json();
+                empresas.forEach(emp => {
+                    const opt = document.createElement('option');
+                    opt.value = emp.razon_social;
+                    opt.textContent = emp.razon_social;
+                    selectEmp.appendChild(opt);
+                });
+            }
+        } catch (e) {
+            console.error("Error cargando empresas para filtro:", e);
         }
 
         // Cargar mapeo de archivo -> proveedor
@@ -177,11 +206,26 @@
         } catch (e) {
             console.error("Error cargando mapeo de proveedores:", e);
         }
+
+        // Cargar mapeo de archivo -> emisor (Razón Social)
+        try {
+            const resMapE = await fetch('/get_mapeo_emisores?_=' + Date.now());
+            mapeoEmisores = await resMapE.json();
+        } catch (e) {
+            console.error("Error cargando mapeo de emisores:", e);
+        }
     });
 
     async function filtrarHistorial() {
-        const query = document.getElementById('buscador').value.toLowerCase().trim();
-        const provSeleccionado = document.getElementById('filtro-proveedor').value;
+        const inputBuscador = document.getElementById('buscador');
+        const query = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
+        
+        const selectProv = document.getElementById('filtro-proveedor');
+        const provSeleccionado = selectProv ? selectProv.value : '';
+        
+        const selectEmisor = document.getElementById('filtro-razon-social');
+        const emisorSeleccionado = selectEmisor ? selectEmisor.value : '';
+        
         const itemsUI = document.querySelectorAll('.archivo-item');
 
         let archivosValidosDeBusqueda = null;
@@ -199,6 +243,7 @@
         itemsUI.forEach(li => {
             const nombreArchivo = li.querySelector('.archivo-nombre').textContent.trim();
             const provDeArchivo = mapeoProveedores[nombreArchivo] || '';
+            const emisorDeArchivo = mapeoEmisores[nombreArchivo] || '';
 
             // 1. Filtrado por consulta de búsqueda (incluyendo nombre de archivo o contenido)
             let pasaBusqueda = true;
@@ -212,8 +257,14 @@
                 pasaProveedor = (normalizarParaComparar(provDeArchivo) === normalizarParaComparar(provSeleccionado));
             }
 
-            // Mostrar si cumple con ambos filtros
-            if (pasaBusqueda && pasaProveedor) {
+            // 3. Filtrado por emisor / Razón Social (comparación normalizada)
+            let pasaEmisor = true;
+            if (emisorSeleccionado !== '') {
+                pasaEmisor = (normalizarParaComparar(emisorDeArchivo) === normalizarParaComparar(emisorSeleccionado));
+            }
+
+            // Mostrar si cumple con todos los filtros activos
+            if (pasaBusqueda && pasaProveedor && pasaEmisor) {
                 li.style.display = 'flex';
             } else {
                 li.style.display = 'none';

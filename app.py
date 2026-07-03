@@ -573,6 +573,23 @@ def get_mapeo_proveedores():
                         pass
     return jsonify(mapeo)
 
+@app.route('/get_mapeo_emisores')
+def get_mapeo_emisores():
+    mapeo = {}
+    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS]:
+        if os.path.exists(carpeta):
+            for f in os.listdir(carpeta):
+                if f.endswith('.json'):
+                    try:
+                        with open(os.path.join(carpeta, f), 'r', encoding='utf-8') as file:
+                            data = json.load(file)
+                            emisor = data.get('razon_social')
+                            if emisor:
+                                mapeo[f.replace('.json', '.pdf')] = emisor
+                    except Exception:
+                        pass
+    return jsonify(mapeo)
+
 @app.route('/buscar_archivos')
 def buscar_archivos():
     q = request.args.get('q', '').lower()
