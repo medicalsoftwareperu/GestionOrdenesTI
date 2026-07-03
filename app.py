@@ -191,10 +191,8 @@ def sincronizar_contadores_con_disco():
                         max_val = val
         if max_val > 0:
             with get_db_connection() as conn_db:
-                row = conn_db.execute('SELECT valor FROM contadores WHERE tipo = ?', ('compras',)).fetchone()
-                if not row or row[0] <= max_val:
-                    conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('compras', max_val + 1))
-                    conn_db.commit()
+                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('compras', max_val + 1))
+                conn_db.commit()
 
     # Sincronizar bajas
     if os.path.exists(CARPETA_BAJAS):
@@ -208,10 +206,8 @@ def sincronizar_contadores_con_disco():
                         max_val = val
         if max_val > 0:
             with get_db_connection() as conn_db:
-                row = conn_db.execute('SELECT valor FROM contadores WHERE tipo = ?', ('bajas',)).fetchone()
-                if not row or row[0] <= max_val:
-                    conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('bajas', max_val + 1))
-                    conn_db.commit()
+                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('bajas', max_val + 1))
+                conn_db.commit()
 
     # Sincronizar pagos
     if os.path.exists(CARPETA_PAGOS):
@@ -225,10 +221,8 @@ def sincronizar_contadores_con_disco():
                         max_val = val
         if max_val > 0:
             with get_db_connection() as conn_db:
-                row = conn_db.execute('SELECT valor FROM contadores WHERE tipo = ?', ('pagos',)).fetchone()
-                if not row or row[0] <= max_val:
-                    conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('pagos', max_val + 1))
-                    conn_db.commit()
+                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('pagos', max_val + 1))
+                conn_db.commit()
 
 # Ejecutar sincronización al inicio
 try:
@@ -362,14 +356,20 @@ def historial():
     archivos_bajas = []
     archivos_pagos = []
     
+    def obtener_numero_orden(filename):
+        match = re.search(r'-(\d+)\.pdf$', filename)
+        if match:
+            return int(match.group(1))
+        return 0
+    
     if rol == 'sistemas':
         if os.path.exists(CARPETA_COMPRAS):
-            archivos_compras = sorted([f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')], reverse=True)
+            archivos_compras = sorted([f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
         if os.path.exists(CARPETA_BAJAS):
-            archivos_bajas = sorted([f for f in os.listdir(CARPETA_BAJAS) if f.endswith('.pdf')], reverse=True)
+            archivos_bajas = sorted([f for f in os.listdir(CARPETA_BAJAS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
     elif rol == 'contabilidad':
         if os.path.exists(CARPETA_PAGOS):
-            archivos_pagos = sorted([f for f in os.listdir(CARPETA_PAGOS) if f.endswith('.pdf')], reverse=True)
+            archivos_pagos = sorted([f for f in os.listdir(CARPETA_PAGOS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
             
     return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos)
 
