@@ -306,6 +306,24 @@
     }
   }
 
+  function obtenerAbreviaturaEmpresa(empresaName) {
+    if (!empresaName) return 'OP';
+    const norm = empresaName.toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9&]/g, '')
+      .trim();
+    
+    if (norm.includes('diagnostic')) return 'OP_DX';
+    if (norm.includes('onco')) return 'OP_OT';
+    if (norm.includes('oxxo')) return 'OP_OX';
+    if (norm.includes('med')) return 'OP_MED';
+    if (norm.includes('j&r') || norm.includes('jr')) return 'OP_JyR';
+    if (norm.includes('j&l') || norm.includes('jl')) return 'OP_JyL';
+    
+    return 'OP';
+  }
+
   async function cargarMetadatosDeEdicion() {
     try {
       const res = await fetch(`/get_metadata/pagos/${EDIT_FILENAME}`);
@@ -544,7 +562,14 @@
 
     const elemento = document.getElementById('oc-doc');
     const numeroOP = document.getElementById('oc-number').value || 'SinNumero';
-    const nombreArchivo = `OP_${numeroOP}.pdf`;
+    
+    let nombreArchivo;
+    if (EDIT_MODE) {
+      nombreArchivo = EDIT_FILENAME;
+    } else {
+      const prefijo = obtenerAbreviaturaEmpresa(document.getElementById('razon-social').value);
+      nombreArchivo = `${prefijo}_${numeroOP}.pdf`;
+    }
 
     const items = [];
     document.querySelectorAll('#items-body tr').forEach(tr => {

@@ -342,7 +342,8 @@ def pagos():
         return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
-        numero_op = edit.replace('OP_', '').replace('.pdf', '')
+        match = re.search(r'OP_(?:[A-Za-z]+_)?(.+)\.pdf$', edit)
+        numero_op = match.group(1) if match else edit.replace('OP_', '').replace('.pdf', '')
         return render_template('orden_de_pago.html', numero_op=numero_op, edit_mode=True, edit_filename=edit)
         
     return render_template('orden_de_pago.html', numero_op='', edit_mode=False, edit_filename='')
@@ -454,6 +455,13 @@ def guardar_pdf():
     else:
         ruta_guardado = os.path.join(CARPETA_HISTORIAL, nombre_archivo)
     
+    # Evitar sobreescrituras accidentales al crear un nuevo documento
+    if not edit_mode and os.path.exists(ruta_guardado):
+        return jsonify({
+            'success': False, 
+            'message': f'Ya existe un documento con el nombre "{nombre_archivo}" en el historial. Por favor, usa otro número correlativo o edita el documento existente.'
+        })
+        
     # Guardar PDF
     archivo_pdf.save(ruta_guardado)
 
@@ -590,9 +598,9 @@ def obtener_siguiente_voucher_por_empresa(empresa_name):
         'medicaldiagnostic': 11,
         'oncotest': 12,
         'medicaloxxo': 14,
-        'medicalmed': 11,
-        'jrglobal': 7,
-        'jl': 3
+        'medicalmed': 10,
+        'jrglobal': 8,
+        'jl': 4
     }
     
     inicio = 1
