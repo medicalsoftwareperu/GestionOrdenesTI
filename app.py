@@ -345,9 +345,7 @@ def pagos():
         numero_op = edit.replace('OP_', '').replace('.pdf', '')
         return render_template('orden_de_pago.html', numero_op=numero_op, edit_mode=True, edit_filename=edit)
         
-    numero_actual = obtener_siguiente_numero('pagos')
-    numero_formateado = f"{datetime.now().year}-{numero_actual:06d}"
-    return render_template('orden_de_pago.html', numero_op=numero_formateado, edit_mode=False, edit_filename='')
+    return render_template('orden_de_pago.html', numero_op='', edit_mode=False, edit_filename='')
 
 @app.route('/historial')
 def historial():

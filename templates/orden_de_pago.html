@@ -289,13 +289,6 @@
           cargarMetadatosDeEdicion();
         } else {
           initialItems.forEach(addRow);
-          if (listaMisEmpresas.length > 0) {
-            const e = listaMisEmpresas[0];
-            inputEmpresa.value = e.razon_social;
-            document.getElementById('ruc').value = e.ruc;
-            document.getElementById('direccion').value = e.direccion;
-            actualizarVoucherPorEmpresa(e.razon_social);
-          }
         }
       });
   });
