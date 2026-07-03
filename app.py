@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session
 from datetime import datetime
@@ -177,10 +178,71 @@ with get_db_connection() as conn:
             
     conn.commit()
 
+def sincronizar_contadores_con_disco():
+    # Sincronizar compras
+    if os.path.exists(CARPETA_COMPRAS):
+        max_val = 0
+        for f in os.listdir(CARPETA_COMPRAS):
+            if f.startswith('OC_') and f.endswith('.pdf'):
+                match = re.search(r'-(\d+)\.pdf$', f)
+                if match:
+                    val = int(match.group(1))
+                    if val > max_val:
+                        max_val = val
+        if max_val > 0:
+            with get_db_connection() as conn_db:
+                row = conn_db.execute('SELECT valor FROM contadores WHERE tipo = ?', ('compras',)).fetchone()
+                if not row or row[0] <= max_val:
+                    conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('compras', max_val + 1))
+                    conn_db.commit()
 
+    # Sincronizar bajas
+    if os.path.exists(CARPETA_BAJAS):
+        max_val = 0
+        for f in os.listdir(CARPETA_BAJAS):
+            if f.startswith('BAJA_') and f.endswith('.pdf'):
+                match = re.search(r'-(\d+)\.pdf$', f)
+                if match:
+                    val = int(match.group(1))
+                    if val > max_val:
+                        max_val = val
+        if max_val > 0:
+            with get_db_connection() as conn_db:
+                row = conn_db.execute('SELECT valor FROM contadores WHERE tipo = ?', ('bajas',)).fetchone()
+                if not row or row[0] <= max_val:
+                    conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('bajas', max_val + 1))
+                    conn_db.commit()
+
+    # Sincronizar pagos
+    if os.path.exists(CARPETA_PAGOS):
+        max_val = 0
+        for f in os.listdir(CARPETA_PAGOS):
+            if f.startswith('OP_') and f.endswith('.pdf'):
+                match = re.search(r'-(\d+)\.pdf$', f)
+                if match:
+                    val = int(match.group(1))
+                    if val > max_val:
+                        max_val = val
+        if max_val > 0:
+            with get_db_connection() as conn_db:
+                row = conn_db.execute('SELECT valor FROM contadores WHERE tipo = ?', ('pagos',)).fetchone()
+                if not row or row[0] <= max_val:
+                    conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('pagos', max_val + 1))
+                    conn_db.commit()
+
+# Ejecutar sincronización al inicio
+try:
+    sincronizar_contadores_con_disco()
+except Exception as sync_err:
+    print("Error sincronizando contadores al inicio:", sync_err)
 
 # --- LÓGICA DE CONTADORES ---
 def obtener_siguiente_numero(tipo):
+    try:
+        sincronizar_contadores_con_disco()
+    except Exception as sync_err:
+        print("Error al sincronizar contadores durante consulta:", sync_err)
+        
     conn = get_db_connection()
     row = conn.execute('SELECT valor FROM contadores WHERE tipo = ?', (tipo,)).fetchone()
     conn.close()
