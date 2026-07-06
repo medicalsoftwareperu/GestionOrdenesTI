@@ -710,9 +710,8 @@
 </script>
 
 <script>
-    // Inicializar tema al cargar la página
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', currentTheme);
+    // Forzar tema claro para que las Órdenes de Compra mantengan siempre su diseño original
+    document.documentElement.setAttribute('data-theme', 'light');
 </script>
 </body>
 </html>
