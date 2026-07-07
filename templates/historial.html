@@ -267,7 +267,7 @@
                         {% if oc_vinculada %}
                             {% if mapeo_facturas_oc.get(oc_vinculada) %}
                                 <span class="circulo-estado" style="background-color: #27ae60;" title="Factura Subida"></span>
-                                <a href="/ver_factura/Factura_{{ oc_vinculada }}" target="_blank" class="enlace-factura" title="Abrir Factura PDF">Abrir PDF de Factura</a>
+                                <a href="/ver_factura/Factura_{{ oc_vinculada }}" download class="enlace-factura" title="Descargar Factura PDF">Descargar Factura</a>
                             {% else %}
                                 <span class="circulo-estado" style="background-color: #e67e22;" title="Pendiente Factura"></span>
                                 <span class="texto-pendiente-factura">Pendiente Factura</span>
