@@ -135,10 +135,10 @@
                     <a href="/compras?edit={{ archivo }}" class="btn-ver" style="background: #e67e22;">Editar</a>
                     
                     {% if mapeo_facturas.get(archivo) %}
-                        <a href="/ver_factura/Factura_{{ archivo }}" target="_blank" class="btn-factura-ver" title="Ver Factura PDF">📄 Ver Factura</a>
-                        <button onclick="iniciarSubidaFactura('{{ archivo }}')" class="btn-factura-reemplazar" title="Reemplazar Factura">🔄 Reemplazar</button>
+                        <a href="/ver_factura/Factura_{{ archivo }}" target="_blank" class="btn-factura-ver" title="Ver Factura PDF">Ver Factura</a>
+                        <button onclick="iniciarSubidaFactura('{{ archivo }}')" class="btn-factura-reemplazar" title="Reemplazar Factura">Reemplazar</button>
                     {% else %}
-                        <button onclick="iniciarSubidaFactura('{{ archivo }}')" class="btn-factura-subir">📤 Subir Factura</button>
+                        <button onclick="iniciarSubidaFactura('{{ archivo }}')" class="btn-factura-subir">Subir Factura</button>
                     {% endif %}
                 </div>
             </li>
