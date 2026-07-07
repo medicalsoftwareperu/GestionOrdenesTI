@@ -358,6 +358,9 @@ def historial():
     archivos_pagos = []
     mapeo_facturas = {}
     
+    mapeo_vinculos_oc = {}
+    mapeo_facturas_oc = {}
+    
     def obtener_numero_orden(filename):
         match = re.search(r'-(\d+)\.pdf$', filename)
         if match:
@@ -375,8 +378,24 @@ def historial():
     elif rol == 'contabilidad':
         if os.path.exists(CARPETA_PAGOS):
             archivos_pagos = sorted([f for f in os.listdir(CARPETA_PAGOS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
+            for f in archivos_pagos:
+                json_nombre = f.replace('.pdf', '.json')
+                ruta_json = os.path.join(CARPETA_PAGOS_EDITADAS, json_nombre)
+                if not os.path.exists(ruta_json):
+                    ruta_json = os.path.join(CARPETA_PAGOS, json_nombre)
+                if os.path.exists(ruta_json):
+                    try:
+                        with open(ruta_json, 'r', encoding='utf-8') as file_json:
+                            meta = json.load(file_json)
+                            oc_ref = meta.get('orden_compra_referencia')
+                            if oc_ref:
+                                mapeo_vinculos_oc[f] = oc_ref
+                                factura_nombre = f"Factura_{oc_ref}"
+                                mapeo_facturas_oc[oc_ref] = os.path.exists(os.path.join(CARPETA_FACTURAS, factura_nombre))
+                    except Exception:
+                        pass
             
-    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos, mapeo_facturas=mapeo_facturas)
+    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos, mapeo_facturas=mapeo_facturas, mapeo_vinculos_oc=mapeo_vinculos_oc, mapeo_facturas_oc=mapeo_facturas_oc)
 
 
 # --- RUTAS DE ARCHIVOS (PDF) ---
@@ -424,6 +443,54 @@ def subir_factura():
         return jsonify({'success': True, 'message': 'Factura subida exitosamente'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error al guardar el archivo: {str(e)}'}), 500
+
+@app.route('/get_lista_compras')
+def get_lista_compras():
+    rol = session.get('rol', 'sistemas')
+    if rol != 'contabilidad':
+        return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
+    
+    compras = []
+    if os.path.exists(CARPETA_COMPRAS):
+        compras = [f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')]
+    return jsonify(compras)
+
+@app.route('/vincular_oc', methods=['POST'])
+def vincular_oc():
+    rol = session.get('rol', 'sistemas')
+    if rol != 'contabilidad':
+        return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
+        
+    data = request.json or {}
+    nombre_op = data.get('nombre_op', '')
+    nombre_oc = data.get('nombre_oc', '').strip()
+    
+    if not nombre_op or not nombre_op.startswith('OP_'):
+        return jsonify({'success': False, 'message': 'Referencia de orden de pago no válida'}), 400
+        
+    json_nombre = nombre_op.replace('.pdf', '.json')
+    ruta_json = os.path.join(CARPETA_PAGOS_EDITADAS, json_nombre)
+    if not os.path.exists(ruta_json):
+        ruta_json = os.path.join(CARPETA_PAGOS, json_nombre)
+        
+    if not os.path.exists(ruta_json):
+        return jsonify({'success': False, 'message': 'No se encontraron metadatos para esta orden de pago'}), 404
+        
+    try:
+        with open(ruta_json, 'r', encoding='utf-8') as f:
+            metadata = json.load(f)
+            
+        if nombre_oc:
+            metadata['orden_compra_referencia'] = nombre_oc
+        else:
+            metadata.pop('orden_compra_referencia', None)
+            
+        with open(ruta_json, 'w', encoding='utf-8') as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+            
+        return jsonify({'success': True, 'message': 'Vínculo actualizado exitosamente'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error al actualizar vínculo: {str(e)}'}), 500
 
 @app.route('/get_metadata/<tipo>/<nombre>')
 def get_metadata(tipo, nombre):
