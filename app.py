@@ -412,8 +412,8 @@ def ver_pdf(tipo, nombre):
 
 @app.route('/ver_factura/<nombre>')
 def ver_factura(nombre):
-    rol = session.get('rol', 'sistemas')
-    if rol != 'sistemas':
+    rol = session.get('rol')
+    if rol not in ['sistemas', 'contabilidad']:
         return "Acceso no autorizado", 403
     return send_from_directory(CARPETA_FACTURAS, nombre)
 
