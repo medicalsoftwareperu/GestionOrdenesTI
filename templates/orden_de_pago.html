@@ -626,8 +626,16 @@
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: 'avoid-all' }
     };
+    // Cambiar temporalmente a tema claro para que el PDF se genere con fondo blanco
+    const temaOriginal = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', 'light');
+
+    // Esperar un frame para que el navegador aplique los estilos claros
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+      // Restaurar el tema original después de capturar
+      document.documentElement.setAttribute('data-theme', temaOriginal || 'dark');
       const formData = new FormData();
       formData.append('pdf', pdfBlob, nombreArchivo);
       formData.append('items', JSON.stringify(items));
@@ -656,9 +664,8 @@
 </script>
 
 <script>
-    // Inicializar tema al cargar la página
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', currentTheme);
+    // Forzar tema oscuro para que las Órdenes de Pago mantengan siempre su diseño de contabilidad
+    document.documentElement.setAttribute('data-theme', 'dark');
 </script>
 </body>
 </html>

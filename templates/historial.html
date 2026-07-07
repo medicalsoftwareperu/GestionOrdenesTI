@@ -274,9 +274,12 @@
 </script>
 
 <script>
-    // Inicializar tema al cargar la página
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', currentTheme);
+    // Forzar tema según el rol del usuario para evitar inconsistencias
+    {% if session['rol'] == 'contabilidad' %}
+    document.documentElement.setAttribute('data-theme', 'dark');
+    {% else %}
+    document.documentElement.setAttribute('data-theme', 'light');
+    {% endif %}
 </script>
 </body>
 </html>
