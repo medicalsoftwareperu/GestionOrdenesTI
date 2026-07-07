@@ -363,12 +363,9 @@
 </script>
 
 <script>
-    // Forzar tema según el rol del usuario para evitar inconsistencias
-    {% if session['rol'] == 'contabilidad' %}
-    document.documentElement.setAttribute('data-theme', 'dark');
-    {% else %}
-    document.documentElement.setAttribute('data-theme', 'light');
-    {% endif %}
+    // Inicializar tema al cargar la página en base al almacenamiento local
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
 </script>
 </body>
 </html>
