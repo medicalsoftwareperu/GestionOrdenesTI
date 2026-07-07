@@ -64,6 +64,39 @@
         .input-buscador:focus {
             box-shadow: 0 0 8px rgba(26, 58, 92, 0.3);
         }
+        .btn-factura-ver {
+            text-decoration: none;
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-factura-ver:hover { background: #219653; }
+        .btn-factura-subir {
+            text-decoration: none;
+            background: #2980b9;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-factura-subir:hover { background: #2471a3; }
+        .btn-factura-reemplazar {
+            text-decoration: none;
+            background: #7f8c8d;
+            color: white;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-factura-reemplazar:hover { background: #707b7c; }
     </style>
 </head>
 <body>
@@ -97,15 +130,23 @@
             {% for archivo in compras %}
             <li class="archivo-item">
                 <span class="archivo-nombre">{{ archivo }}</span>
-                <div style="display: flex; gap: 5px;">
+                <div style="display: flex; gap: 5px; align-items: center;">
                     <a href="{{ url_for('ver_pdf', tipo='compras', nombre=archivo) }}" target="_blank" class="btn-ver">Ver PDF</a>
                     <a href="/compras?edit={{ archivo }}" class="btn-ver" style="background: #e67e22;">Editar</a>
+                    
+                    {% if mapeo_facturas.get(archivo) %}
+                        <a href="/ver_factura/Factura_{{ archivo }}" target="_blank" class="btn-factura-ver" title="Ver Factura PDF">📄 Ver Factura</a>
+                        <button onclick="iniciarSubidaFactura('{{ archivo }}')" class="btn-factura-reemplazar" title="Reemplazar Factura">🔄 Reemplazar</button>
+                    {% else %}
+                        <button onclick="iniciarSubidaFactura('{{ archivo }}')" class="btn-factura-subir">📤 Subir Factura</button>
+                    {% endif %}
                 </div>
             </li>
             {% else %}
             <p class="vacio">No hay órdenes guardadas aún.</p>
             {% endfor %}
         </ul>
+        <input type="file" id="input-factura" accept=".pdf" style="display: none;" onchange="procesarArchivoFactura(this)">
     </div>
 
     <div class="columna-historial">
@@ -270,6 +311,54 @@
                 li.style.display = 'none';
             }
         });
+    }
+
+    let archivoOCActual = '';
+
+    function iniciarSubidaFactura(nombreOC) {
+        archivoOCActual = nombreOC;
+        document.getElementById('input-factura').click();
+    }
+
+    async function procesarArchivoFactura(inputElement) {
+        if (!inputElement.files || inputElement.files.length === 0 || !archivoOCActual) return;
+        
+        const file = inputElement.files[0];
+        if (!file.name.toLowerCase().endsWith('.pdf')) {
+            alert('❌ Solo se permiten archivos en formato PDF.');
+            inputElement.value = '';
+            return;
+        }
+
+        const confirmacion = confirm(`¿Deseas subir el archivo "${file.name}" como factura para la orden "${archivoOCActual}"?`);
+        if (!confirmacion) {
+            inputElement.value = '';
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('pdf', file);
+        formData.append('nombre_oc', archivoOCActual);
+
+        try {
+            const res = await fetch('/subir_factura', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('✅ Factura guardada exitosamente.');
+                location.reload();
+            } else {
+                alert('❌ Error al subir factura: ' + data.message);
+            }
+        } catch (err) {
+            console.error("Error al subir archivo:", err);
+            alert('❌ Error de conexión al subir la factura.');
+        } finally {
+            inputElement.value = '';
+            archivoOCActual = '';
+        }
     }
 </script>
 

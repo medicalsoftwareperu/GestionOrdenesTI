@@ -50,6 +50,7 @@ CARPETA_PAGOS = os.path.join(CARPETA_HISTORIAL, 'pagos')
 CARPETA_COMPRAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'compras_editadas')
 CARPETA_BAJAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'bajas_editadas')
 CARPETA_PAGOS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'pagos_editadas')
+CARPETA_FACTURAS = os.path.join(CARPETA_HISTORIAL, 'facturas_oc')
 
 os.makedirs(CARPETA_COMPRAS, exist_ok=True)
 os.makedirs(CARPETA_BAJAS, exist_ok=True)
@@ -57,6 +58,7 @@ os.makedirs(CARPETA_PAGOS, exist_ok=True)
 os.makedirs(CARPETA_COMPRAS_EDITADAS, exist_ok=True)
 os.makedirs(CARPETA_BAJAS_EDITADAS, exist_ok=True)
 os.makedirs(CARPETA_PAGOS_EDITADAS, exist_ok=True)
+os.makedirs(CARPETA_FACTURAS, exist_ok=True)
 
 ARCHIVO_CONTADOR = os.path.join(BASE_DIR, 'contador_oc.txt')
 ARCHIVO_CONTADOR_BAJA = os.path.join(BASE_DIR, 'contador_baja.txt')
@@ -354,6 +356,7 @@ def historial():
     archivos_compras = []
     archivos_bajas = []
     archivos_pagos = []
+    mapeo_facturas = {}
     
     def obtener_numero_orden(filename):
         match = re.search(r'-(\d+)\.pdf$', filename)
@@ -364,13 +367,16 @@ def historial():
     if rol == 'sistemas':
         if os.path.exists(CARPETA_COMPRAS):
             archivos_compras = sorted([f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
+            for f in archivos_compras:
+                factura_nombre = f"Factura_{f}"
+                mapeo_facturas[f] = os.path.exists(os.path.join(CARPETA_FACTURAS, factura_nombre))
         if os.path.exists(CARPETA_BAJAS):
             archivos_bajas = sorted([f for f in os.listdir(CARPETA_BAJAS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
     elif rol == 'contabilidad':
         if os.path.exists(CARPETA_PAGOS):
             archivos_pagos = sorted([f for f in os.listdir(CARPETA_PAGOS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
             
-    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos)
+    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos, mapeo_facturas=mapeo_facturas)
 
 
 # --- RUTAS DE ARCHIVOS (PDF) ---
@@ -384,6 +390,40 @@ def ver_pdf(tipo, nombre):
     elif tipo == 'pagos' and rol == 'contabilidad':
         return send_from_directory(CARPETA_PAGOS, nombre)
     return "Archivo no encontrado o acceso no autorizado", 404
+
+@app.route('/ver_factura/<nombre>')
+def ver_factura(nombre):
+    rol = session.get('rol', 'sistemas')
+    if rol != 'sistemas':
+        return "Acceso no autorizado", 403
+    return send_from_directory(CARPETA_FACTURAS, nombre)
+
+@app.route('/subir_factura', methods=['POST'])
+def subir_factura():
+    rol = session.get('rol', 'sistemas')
+    if rol != 'sistemas':
+        return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
+        
+    if 'pdf' not in request.files:
+        return jsonify({'success': False, 'message': 'No se recibió ningún archivo'}), 400
+        
+    archivo_pdf = request.files['pdf']
+    nombre_oc = request.form.get('nombre_oc', '')
+    
+    if not nombre_oc or not nombre_oc.startswith('OC_'):
+        return jsonify({'success': False, 'message': 'Referencia de orden de compra no válida'}), 400
+        
+    if archivo_pdf.filename == '':
+        return jsonify({'success': False, 'message': 'Archivo vacío'}), 400
+        
+    factura_nombre = f"Factura_{nombre_oc}"
+    ruta_guardado = os.path.join(CARPETA_FACTURAS, factura_nombre)
+    
+    try:
+        archivo_pdf.save(ruta_guardado)
+        return jsonify({'success': True, 'message': 'Factura subida exitosamente'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error al guardar el archivo: {str(e)}'}), 500
 
 @app.route('/get_metadata/<tipo>/<nombre>')
 def get_metadata(tipo, nombre):
