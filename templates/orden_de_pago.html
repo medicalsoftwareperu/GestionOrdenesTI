@@ -635,7 +635,7 @@
 
     html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
       // Restaurar el tema original después de capturar
-      document.documentElement.setAttribute('data-theme', temaOriginal || 'dark');
+      document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
       const formData = new FormData();
       formData.append('pdf', pdfBlob, nombreArchivo);
       formData.append('items', JSON.stringify(items));
@@ -664,8 +664,9 @@
 </script>
 
 <script>
-    // Forzar tema oscuro para que las Órdenes de Pago mantengan siempre su diseño de contabilidad
-    document.documentElement.setAttribute('data-theme', 'dark');
+    // Inicializar tema al cargar la página en base al almacenamiento local
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
 </script>
 </body>
 </html>
