@@ -562,6 +562,9 @@
   }
 
   async function guardarEnHistorial() {
+    if (!EDIT_MODE && document.getElementById('razon-social').value) {
+      await actualizarVoucherPorEmpresa(document.getElementById('razon-social').value);
+    }
     const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Orden de Pago?' : '¿Deseas guardar esta Orden de Pago en el historial?';
     if (!confirm(confirmMsg)) return;
 
