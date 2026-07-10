@@ -321,6 +321,8 @@
       .replace(/[^a-z0-9&]/g, '')
       .trim();
     
+    if (norm.includes('dentplus')) return 'OP_DP';
+    if (norm.includes('dentdigital') || norm.includes('dent')) return 'OP_DD';
     if (norm.includes('diagnostic')) return 'OP_DX';
     if (norm.includes('onco')) return 'OP_OT';
     if (norm.includes('oxxo')) return 'OP_OX';

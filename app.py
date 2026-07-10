@@ -180,6 +180,8 @@ with get_db_connection() as conn:
             
     conn.commit()
 
+
+
 def sincronizar_contadores_con_disco():
     # Sincronizar compras
     if os.path.exists(CARPETA_COMPRAS):
@@ -454,6 +456,7 @@ def get_lista_compras():
     if os.path.exists(CARPETA_COMPRAS):
         compras = [f for f in os.listdir(CARPETA_COMPRAS) if f.endswith('.pdf')]
     return jsonify(compras)
+
 
 @app.route('/vincular_oc', methods=['POST'])
 def vincular_oc():
