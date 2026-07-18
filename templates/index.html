@@ -12,7 +12,6 @@
     <!-- Barra de Usuario y Salida -->
     <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-body-tertiary rounded shadow-sm border">
         <div class="d-flex align-items-center">
-            <span class="fs-4 me-2">👤</span>
             <span class="text-secondary">Conectado como: <strong class="text-primary">{{ session['usuario'] }}</strong></span>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -20,7 +19,7 @@
                 🌙
             </button>
             <a href="/logout" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1 shadow-sm">
-                <span>🚪</span> Cerrar Sesión
+                Cerrar Sesión
             </a>
         </div>
     </div>
@@ -45,7 +44,7 @@
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-primary">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-primary">🛒 Orden de Compra</h3>
+                    <h3 class="card-title text-primary">Orden de Compra</h3>
                     <p class="card-text">Generar una nueva solicitud para compra de equipos, repuestos o suministros.</p>
                     <a href="/compras" class="btn btn-primary btn-lg mt-3 w-100">Crear Orden</a>
                 </div>
@@ -55,7 +54,7 @@
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-danger">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-danger">♻️ Guía de Baja</h3>
+                    <h3 class="card-title text-danger">Guía de Baja</h3>
                     <p class="card-text">Registrar la salida o desecho de equipos de cómputo por fallas u obsolescencia.</p>
                     <a href="/bajas" class="btn btn-danger btn-lg mt-3 w-100">Crear Guía</a>
                 </div>
@@ -65,7 +64,7 @@
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-danger">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-danger">💳 Orden de Pago</h3>
+                    <h3 class="card-title text-danger">Orden de Pago</h3>
                     <p class="card-text">Generar una nueva orden de pago para proveedores con formato contable.</p>
                     <a href="/pagos" class="btn btn-danger btn-lg mt-3 w-100">Crear Orden</a>
                 </div>
@@ -75,7 +74,7 @@
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-warning">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-warning">🛠️ Orden de Servicio</h3>
+                    <h3 class="card-title text-warning">Orden de Servicio</h3>
                     <p class="card-text">Generar una nueva orden de servicio para marketing.</p>
                     <a href="#" class="btn btn-warning btn-lg mt-3 w-100 disabled" style="cursor: not-allowed;">Crear Orden</a>
                 </div>
@@ -86,7 +85,7 @@
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-success">
                 <div class="card-body text-center">
-                    <h3 class="card-title text-success">📂 Historial</h3>
+                    <h3 class="card-title text-success">Historial</h3>
                     <p class="card-text">Revisar los documentos generados anteriormente y descargarlos.</p>
                     {% if session['rol'] == 'marketing' %}
                     <a href="#" class="btn btn-success btn-lg mt-3 w-100 disabled" style="cursor: not-allowed;">Ver Archivos</a>
