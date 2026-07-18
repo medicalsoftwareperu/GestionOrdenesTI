@@ -109,6 +109,21 @@ with get_db_connection() as conn:
         )
     ''')
     conn.execute('''
+        CREATE TABLE IF NOT EXISTS proveedores_mkt (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT UNIQUE,
+            ruc TEXT,
+            direccion TEXT,
+            contacto TEXT,
+            cuenta_soles TEXT,
+            cci TEXT,
+            cuenta_dolares TEXT,
+            banco TEXT DEFAULT 'BCP',
+            contacto_nombre TEXT DEFAULT '',
+            contacto_telefono TEXT DEFAULT ''
+        )
+    ''')
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS items_pdf (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre_archivo TEXT,
@@ -701,7 +716,12 @@ def get_mis_empresas():
 @app.route('/get_proveedores')
 def get_proveedores():
     rol = session.get('rol', 'sistemas')
-    table = 'proveedores_conta' if rol == 'contabilidad' else 'proveedores'
+    if rol == 'contabilidad':
+        table = 'proveedores_conta'
+    elif rol == 'marketing':
+        table = 'proveedores_mkt'
+    else:
+        table = 'proveedores'
     conn = get_db_connection()
     proveedores = conn.execute(f'SELECT * FROM {table} ORDER BY nombre ASC').fetchall()
     conn.close()
@@ -710,7 +730,12 @@ def get_proveedores():
 @app.route('/guardar_proveedor', methods=['POST'])
 def guardar_proveedor():
     rol = session.get('rol', 'sistemas')
-    table = 'proveedores_conta' if rol == 'contabilidad' else 'proveedores'
+    if rol == 'contabilidad':
+        table = 'proveedores_conta'
+    elif rol == 'marketing':
+        table = 'proveedores_mkt'
+    else:
+        table = 'proveedores'
     data = request.json
     try:
         with get_db_connection() as conn:
@@ -729,7 +754,7 @@ def guardar_proveedor():
                     data.get('contacto_nombre', ''),
                     data.get('contacto_telefono', '')
                 ))
-            conn.commit()
+            conn.execute('COMMIT')
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
