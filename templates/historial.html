@@ -190,6 +190,14 @@
         <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
             <option value="">🏢 Todos los Proveedores</option>
         </select>
+    {% elif session['rol'] == 'marketing' %}
+        <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por servicio o fecha (ej. 'publicidad', '2026')..." onkeyup="filtrarHistorial()">
+        <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
+            <option value="">🏢 Todos los Proveedores</option>
+        </select>
+        <select id="filtro-razon-social" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
+            <option value="">🏢 Todas las Empresas Emisoras</option>
+        </select>
     {% else %}
         <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
             <option value="">🏢 Todos los Proveedores</option>
@@ -228,7 +236,7 @@
     </div>
 
     <div class="columna-historial">
-        <h2 style="color: #c0392b; border-bottom: 2px solid #c0392b; padding-bottom: 5px;">📉 Guías de Baja</h2>
+        <h2 style="color: #c0392b; border-bottom: 2px solid #c0392b; padding-bottom: 5px;">Guías de Baja</h2>
         <ul class="lista-archivos">
             {% for archivo in bajas %}
             <li class="archivo-item">
@@ -245,7 +253,7 @@
     </div>
     {% elif session['rol'] == 'contabilidad' %}
     <div class="columna-historial" style="grid-column: span 2;">
-        <h2 style="color: #c02c2c; border-bottom: 2px solid #c02c2c; padding-bottom: 5px;">💳 Órdenes de Pago</h2>
+        <h2 style="color: #c02c2c; border-bottom: 2px solid #c02c2c; padding-bottom: 5px;">Orden de Pago</h2>
         <ul class="lista-archivos">
             {% for archivo in pagos %}
             <li class="archivo-item">
@@ -284,7 +292,25 @@
             {% endfor %}
         </ul>
     </div>
+    {% elif session['rol'] == 'marketing' %}
+    <div class="columna-historial" style="grid-column: span 2;">
+        <h2 style="color: #d68910; border-bottom: 2px solid #d68910; padding-bottom: 5px;">Orden de Servicio</h2>
+        <ul class="lista-archivos">
+            {% for archivo in servicios %}
+            <li class="archivo-item">
+                <span class="archivo-nombre">{{ archivo }}</span>
+                <div style="display: flex; gap: 5px;">
+                    <a href="{{ url_for('ver_pdf', tipo='servicios', nombre=archivo) }}" target="_blank" class="btn-ver" style="background: #d68910;">Ver PDF</a>
+                    <a href="/servicios?edit={{ archivo }}" class="btn-ver" style="background: #e67e22;">Editar</a>
+                </div>
+            </li>
+            {% else %}
+            <p class="vacio">No hay órdenes de servicio guardadas aún.</p>
+            {% endfor %}
+        </ul>
+    </div>
     {% endif %}
+</div>
 </div>
 
 <script>

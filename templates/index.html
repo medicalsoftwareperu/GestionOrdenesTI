@@ -76,7 +76,7 @@
                 <div class="card-body text-center">
                     <h3 class="card-title text-warning">Orden de Servicio</h3>
                     <p class="card-text">Generar una nueva orden de servicio para marketing.</p>
-                    <a href="#" class="btn btn-warning btn-lg mt-3 w-100 disabled" style="cursor: not-allowed;">Crear Orden</a>
+                    <a href="/servicios" class="btn btn-warning btn-lg mt-3 w-100">Crear Orden</a>
                 </div>
             </div>
         </div>
@@ -87,11 +87,7 @@
                 <div class="card-body text-center">
                     <h3 class="card-title text-success">Historial</h3>
                     <p class="card-text">Revisar los documentos generados anteriormente y descargarlos.</p>
-                    {% if session['rol'] == 'marketing' %}
-                    <a href="#" class="btn btn-success btn-lg mt-3 w-100 disabled" style="cursor: not-allowed;">Ver Archivos</a>
-                    {% else %}
                     <a href="/historial" class="btn btn-success btn-lg mt-3 w-100">Ver Archivos</a>
-                    {% endif %}
                 </div>
             </div>
         </div>

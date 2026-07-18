@@ -51,17 +51,21 @@ CARPETA_HISTORIAL = os.path.join(BASE_DIR, 'historial')
 CARPETA_COMPRAS = os.path.join(CARPETA_HISTORIAL, 'compras')
 CARPETA_BAJAS = os.path.join(CARPETA_HISTORIAL, 'bajas')
 CARPETA_PAGOS = os.path.join(CARPETA_HISTORIAL, 'pagos')
+CARPETA_SERVICIOS = os.path.join(CARPETA_HISTORIAL, 'servicios')
 CARPETA_COMPRAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'compras_editadas')
 CARPETA_BAJAS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'bajas_editadas')
 CARPETA_PAGOS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'pagos_editadas')
+CARPETA_SERVICIOS_EDITADAS = os.path.join(CARPETA_HISTORIAL, 'servicios_editadas')
 CARPETA_FACTURAS = os.path.join(CARPETA_HISTORIAL, 'facturas_oc')
 
 os.makedirs(CARPETA_COMPRAS, exist_ok=True)
 os.makedirs(CARPETA_BAJAS, exist_ok=True)
 os.makedirs(CARPETA_PAGOS, exist_ok=True)
+os.makedirs(CARPETA_SERVICIOS, exist_ok=True)
 os.makedirs(CARPETA_COMPRAS_EDITADAS, exist_ok=True)
 os.makedirs(CARPETA_BAJAS_EDITADAS, exist_ok=True)
 os.makedirs(CARPETA_PAGOS_EDITADAS, exist_ok=True)
+os.makedirs(CARPETA_SERVICIOS_EDITADAS, exist_ok=True)
 os.makedirs(CARPETA_FACTURAS, exist_ok=True)
 
 ARCHIVO_CONTADOR = os.path.join(BASE_DIR, 'contador_oc.txt')
@@ -176,11 +180,14 @@ with get_db_connection() as conn:
         except sqlite3.OperationalError:
             pass
 
-    # Inicializar contador de pagos si no existe
+    # Inicializar contador de pagos y servicios si no existen
     cursor = conn.cursor()
     cursor.execute('SELECT COUNT(*) FROM contadores WHERE tipo = ?', ('pagos',))
     if cursor.fetchone()[0] == 0:
         conn.execute('INSERT INTO contadores (tipo, valor) VALUES (?, ?)', ('pagos', 1))
+    cursor.execute('SELECT COUNT(*) FROM contadores WHERE tipo = ?', ('servicios',))
+    if cursor.fetchone()[0] == 0:
+        conn.execute('INSERT INTO contadores (tipo, valor) VALUES (?, ?)', ('servicios', 1))
             
     conn.commit()
 
@@ -230,6 +237,21 @@ def sincronizar_contadores_con_disco():
         if max_val > 0:
             with get_db_connection() as conn_db:
                 conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('pagos', max_val + 1))
+                conn_db.commit()
+
+    # Sincronizar servicios
+    if os.path.exists(CARPETA_SERVICIOS):
+        max_val = 0
+        for f in os.listdir(CARPETA_SERVICIOS):
+            if f.startswith('OS_') and f.endswith('.pdf'):
+                match = re.search(r'-(\d+)\.pdf$', f)
+                if match:
+                    val = int(match.group(1))
+                    if val > max_val:
+                        max_val = val
+        if max_val > 0:
+            with get_db_connection() as conn_db:
+                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('servicios', max_val + 1))
                 conn_db.commit()
 
 # Ejecutar sincronización al inicio
@@ -330,6 +352,20 @@ def compras():
     numero_formateado = f"{fecha_hoy}-{numero_actual:04d}" 
     return render_template('orden_de_compra.html', numero_oc=numero_formateado, edit_mode=False, edit_filename='')
 
+@app.route('/servicios')
+def servicios():
+    if session.get('rol') != 'marketing':
+        return redirect(url_for('index'))
+    edit = request.args.get('edit', '')
+    if edit:
+        numero_os = edit.replace('OS_', '').replace('.pdf', '')
+        return render_template('orden_de_servicio.html', numero_os=numero_os, edit_mode=True, edit_filename=edit)
+    
+    numero_actual = obtener_siguiente_numero('servicios')
+    fecha_hoy = datetime.now().strftime('%Y%m%d')
+    numero_formateado = f"{fecha_hoy}-{numero_actual:04d}" 
+    return render_template('orden_de_servicio.html', numero_os=numero_formateado, edit_mode=False, edit_filename='')
+
 @app.route('/bajas')
 def bajas():
     if session.get('rol') != 'sistemas':
@@ -362,6 +398,7 @@ def historial():
     archivos_compras = []
     archivos_bajas = []
     archivos_pagos = []
+    archivos_servicios = []
     mapeo_facturas = {}
     
     mapeo_vinculos_oc = {}
@@ -400,8 +437,11 @@ def historial():
                                 mapeo_facturas_oc[oc_ref] = os.path.exists(os.path.join(CARPETA_FACTURAS, factura_nombre))
                     except Exception:
                         pass
+    elif rol == 'marketing':
+        if os.path.exists(CARPETA_SERVICIOS):
+            archivos_servicios = sorted([f for f in os.listdir(CARPETA_SERVICIOS) if f.endswith('.pdf')], key=lambda f: (-obtener_numero_orden(f), f))
             
-    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos, mapeo_facturas=mapeo_facturas, mapeo_vinculos_oc=mapeo_vinculos_oc, mapeo_facturas_oc=mapeo_facturas_oc)
+    return render_template('historial.html', compras=archivos_compras, bajas=archivos_bajas, pagos=archivos_pagos, servicios=archivos_servicios, mapeo_facturas=mapeo_facturas, mapeo_vinculos_oc=mapeo_vinculos_oc, mapeo_facturas_oc=mapeo_facturas_oc)
 
 
 # --- RUTAS DE ARCHIVOS (PDF) ---
@@ -409,11 +449,21 @@ def historial():
 def ver_pdf(tipo, nombre):
     rol = session.get('rol', 'sistemas')
     if tipo == 'compras' and rol == 'sistemas':
+        if os.path.exists(os.path.join(CARPETA_COMPRAS_EDITADAS, nombre)):
+            return send_from_directory(CARPETA_COMPRAS_EDITADAS, nombre)
         return send_from_directory(CARPETA_COMPRAS, nombre)
     elif tipo == 'bajas' and rol == 'sistemas':
+        if os.path.exists(os.path.join(CARPETA_BAJAS_EDITADAS, nombre)):
+            return send_from_directory(CARPETA_BAJAS_EDITADAS, nombre)
         return send_from_directory(CARPETA_BAJAS, nombre)
     elif tipo == 'pagos' and rol == 'contabilidad':
+        if os.path.exists(os.path.join(CARPETA_PAGOS_EDITADAS, nombre)):
+            return send_from_directory(CARPETA_PAGOS_EDITADAS, nombre)
         return send_from_directory(CARPETA_PAGOS, nombre)
+    elif tipo == 'servicios' and rol == 'marketing':
+        if os.path.exists(os.path.join(CARPETA_SERVICIOS_EDITADAS, nombre)):
+            return send_from_directory(CARPETA_SERVICIOS_EDITADAS, nombre)
+        return send_from_directory(CARPETA_SERVICIOS, nombre)
     return "Archivo no encontrado o acceso no autorizado", 404
 
 @app.route('/ver_factura/<nombre>')
@@ -522,6 +572,12 @@ def get_metadata(tipo, nombre):
             ruta = ruta_editada
         else:
             ruta = os.path.join(CARPETA_PAGOS, json_nombre)
+    elif tipo == 'servicios' and rol == 'marketing':
+        ruta_editada = os.path.join(CARPETA_SERVICIOS_EDITADAS, json_nombre)
+        if os.path.exists(ruta_editada):
+            ruta = ruta_editada
+        else:
+            ruta = os.path.join(CARPETA_SERVICIOS, json_nombre)
     else:
         return jsonify({'success': False, 'message': 'Tipo no válido o acceso no autorizado'}), 400
     
@@ -566,6 +622,12 @@ def guardar_pdf():
         else:
             ruta_guardado = os.path.join(CARPETA_PAGOS, nombre_archivo)
             incrementar_numero('pagos')
+    elif nombre_archivo.startswith('OS_'):
+        if edit_mode:
+            ruta_guardado = os.path.join(CARPETA_SERVICIOS_EDITADAS, nombre_archivo)
+        else:
+            ruta_guardado = os.path.join(CARPETA_SERVICIOS, nombre_archivo)
+            incrementar_numero('servicios')
     else:
         ruta_guardado = os.path.join(CARPETA_HISTORIAL, nombre_archivo)
     
@@ -587,8 +649,8 @@ def guardar_pdf():
             with open(ruta_json, 'w', encoding='utf-8') as f:
                 json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
 
-            # Guardar automáticamente la Razón Social del emisor si es una Orden de Compra o de Pago
-            if nombre_archivo.startswith('OC_') or nombre_archivo.startswith('OP_'):
+            # Guardar automáticamente la Razón Social del emisor si es una Orden de Compra, Pago o Servicio
+            if nombre_archivo.startswith('OC_') or nombre_archivo.startswith('OP_') or nombre_archivo.startswith('OS_'):
                 razon_social = metadata_dict.get('razon_social')
                 ruc = metadata_dict.get('ruc')
                 direccion = metadata_dict.get('direccion')
@@ -611,6 +673,8 @@ def guardar_pdf():
         items = json.loads(items_json)
         if nombre_archivo.startswith('OP_'):
             texto_busqueda = " ".join([f"{i.get('detalle','')} {i.get('comprobante','')}" for i in items]).lower()
+        elif nombre_archivo.startswith('OS_'):
+            texto_busqueda = " ".join([f"{i.get('servicio','')}" for i in items]).lower()
         else:
             texto_busqueda = " ".join([f"{i.get('desc','')} {i.get('marca','')} {i.get('modelo','')}" for i in items]).lower()
         
@@ -673,7 +737,7 @@ def guardar_proveedor():
 @app.route('/get_mapeo_proveedores')
 def get_mapeo_proveedores():
     mapeo = {}
-    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS]:
+    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS, CARPETA_SERVICIOS, CARPETA_SERVICIOS_EDITADAS]:
         if os.path.exists(carpeta):
             for f in os.listdir(carpeta):
                 if f.endswith('.json'):
@@ -690,7 +754,7 @@ def get_mapeo_proveedores():
 @app.route('/get_mapeo_emisores')
 def get_mapeo_emisores():
     mapeo = {}
-    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS]:
+    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS, CARPETA_SERVICIOS, CARPETA_SERVICIOS_EDITADAS]:
         if os.path.exists(carpeta):
             for f in os.listdir(carpeta):
                 if f.endswith('.json'):

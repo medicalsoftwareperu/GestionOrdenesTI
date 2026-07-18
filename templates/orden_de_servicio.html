@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orden de Servicio - Marketing</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.2">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>📋 Generador de Orden de Servicio</h1>
+  
+  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">🏠</button>
+  
+  <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">💱 Moneda: Soles (S/)</button>
+  <button id="btn-igv-toggle" class="btn btn-primary" onclick="toggleIGV()">Precios INCLUYEN IGV</button>
+  <button class="btn btn-success" onclick="addRow()">＋ Agregar ítem</button>
+  <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
+  <button class="btn btn-outline" onclick="clearForm()">🗑 Limpiar todo</button>
+</div>
+
+<div class="card" id="oc-doc">
+
+  <div class="doc-header">
+    <div class="logo-cell">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo Medical" style="max-height: 64px; max-width: 180px; object-fit: contain;">
+    </div>
+    <div class="doc-title-cell">
+      <div class="doc-title">Orden de Servicio</div>
+    </div>
+    <div class="doc-num-cell">
+      <div class="doc-num-label">N°</div>
+      <input class="doc-num-input" id="oc-number" value="{{ numero_os }}" maxlength="12" readonly>
+    </div>
+  </div>
+
+  <div class="section-title">Datos</div>
+  <div class="data-grid cols-4">
+    <div class="data-cell">
+      <span class="lbl">Razón Social:</span>
+    </div>
+    <div class="data-cell span-2">
+      <div style="position: relative; width: 100%;">
+        <input class="field" id="razon-social" value="ONCO TEST S.A.C." placeholder="Razón social" autocomplete="off">
+        <div id="mi-empresa-dropdown" class="custom-dropdown"></div>
+      </div>
+    </div>
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">R.U.C.:</span>
+      <input class="field" id="ruc" value="20547642512" placeholder="RUC">
+    </div>
+
+    <div class="data-cell">
+      <span class="lbl">Dirección:</span>
+    </div>
+    <div class="data-cell span-3">
+      <input class="field" id="direccion" value="Av. Gral Alvarez de Arenales Nro. 630">
+    </div>
+
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">Solicitante:</span>
+      <input class="field" id="solicitante" value="MARKETING" placeholder="" readonly>
+    </div>
+    <div class="data-cell" style="gap:4px">
+      <span class="lbl">Encargado:</span>
+      <input class="field" id="encargado" value="TATYANE AYALA" placeholder="">
+    </div>
+    <div class="data-cell span-2" style="gap:4px">
+      <span class="lbl">Fecha:</span>
+      <input class="field" type="date" id="fecha" style="max-width: 160px;">
+    </div>
+
+    <div class="data-cell span-4" style="gap:4px">
+      <span class="lbl">Motivo:</span>
+      <input class="field" id="motivo" placeholder="Motivo de la compra/servicio">
+    </div>
+  </div>
+
+  <div class="section-title">Datos Proveedor</div>
+  <div class="provider-grid">
+    <div class="provider-col">
+      <div style="position: relative; width: 100%;">
+        <input class="provider-name-input" id="prov-nombre" placeholder="Nombre del proveedor" autocomplete="off">
+        <div id="custom-dropdown" class="custom-dropdown"></div>
+      </div>
+      
+      <div class="provider-row">
+        <span class="lbl">R.U.C</span>
+        <input class="field" id="prov-ruc" placeholder="RUC proveedor">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° CTA. SOLES</span>
+        <input class="field" id="prov-cta-soles" placeholder="">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° CTA. DÓLARES</span>
+        <input class="field" id="prov-cta-dolares" placeholder="">
+      </div>
+    </div>
+    <div class="provider-col">
+      <div style="position: relative; width: 100%;">
+        <select class="provider-bank-select" id="prov-banco">
+          <option value="BCP">BCP</option>
+          <option value="BBVA">BBVA</option>
+          <option value="INTERBANK">INTERBANK</option>
+          <option value="SCOTIABANK">SCOTIABANK</option>
+          <option value="BANBIF">BANBIF</option>
+          <option value="BANCO DE LA NACIÓN">BANCO DE LA NACIÓN</option>
+          <option value="OTROS">OTROS</option>
+        </select>
+      </div>
+      <div class="provider-row">
+        <span class="lbl">Dirección:</span>
+        <input class="field" id="prov-dir" placeholder="Dirección proveedor">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">Contacto:</span>
+        <input class="field" id="prov-contacto-nombre" placeholder="Nombre contacto">
+      </div>
+      <div class="provider-row">
+        <span class="lbl">N° Teléf:</span>
+        <input class="field" id="prov-contacto-telefono" placeholder="Número de contacto">
+      </div>
+    </div>
+  </div>
+
+  <div class="items-wrapper">
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Servicio</th>
+          <th style="width:95px">Cantidad</th>
+          <th style="width:110px">Importe</th>
+          <th style="width:110px" id="col-total-header">Total</th>
+          <th style="width:36px" class="no-print"></th>
+        </tr>
+      </thead>
+      <tbody id="items-body">
+      </tbody>
+    </table>
+  </div>
+
+  <div class="totals-area">
+    <div class="total-line">
+      <span class="total-lbl">Subtotal sin IGV</span>
+      <span class="total-val" id="subtotal">S/ 0.00</span>
+    </div>
+    <div class="total-line">
+      <span class="total-lbl">IGV (18%)</span>
+      <span class="total-val" id="igv-val">S/ 0.00</span>
+    </div>
+    <div class="total-line">
+      <span class="total-lbl">Total con IGV</span>
+      <span class="total-val grand" id="total-igv">S/ 0.00</span>
+    </div>
+  </div>
+
+  <div class="sigs">
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <input class="sig-label" value="COORDINADORA DE MKT" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none;">
+      <input class="sig-name-input" id="sig-sistemas-name" value="TATYANE AYALA">
+    </div>
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <input class="sig-label" value="GERENTE CORPORATIVO" style="border: none; background: transparent; text-align: center; width: 100%; font-weight: bold; outline: none;">
+      <input class="sig-name-input" id="sig-gerente-name" value="RICARDO INGA">
+    </div>
+  </div>
+
+  <div class="doc-footer">
+    <span>★ REVISAR LA ORDEN, SIN AMBAS FIRMAS NO SE CONCRETA EL SERVICIO</span>
+    <span id="footer-total" style="color:var(--red);font-size:14px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.5px">TOTAL CON IGV: S/ 0.00</span>
+  </div>
+
+</div>
+
+<div class="no-print" style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
+  <button class="btn btn-success" style="background-color: #27ae60; font-size: 16px; padding: 12px 30px; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);" onclick="guardarEnHistorial()">
+    💾 Guardar Documento en el Historial
+  </button>
+</div>
+
+<script>
+  const EDIT_MODE = {{ 'true' if edit_mode else 'false' }};
+  const EDIT_FILENAME = "{{ edit_filename }}";
+
+  // Set today's date
+  if (!EDIT_MODE) {
+    document.getElementById('fecha').valueAsDate = new Date();
+  }
+
+  let listaProveedores = [];
+  const inputProv = document.getElementById('prov-nombre');
+  const dropdownMenu = document.getElementById('custom-dropdown');
+
+  let listaMisEmpresas = [];
+  const inputEmpresa = document.getElementById('razon-social');
+  const dropdownEmpresa = document.getElementById('mi-empresa-dropdown');
+
+  // Load data
+  document.addEventListener('DOMContentLoaded', () => {
+    fetch('/get_proveedores?_=' + Date.now())
+      .then(r => r.json())
+      .then(data => { 
+        listaProveedores = data;
+        return fetch('/get_mis_empresas?_=' + Date.now());
+      })
+      .then(r => r.json())
+      .then(data => {
+        listaMisEmpresas = data;
+        if (EDIT_MODE) {
+          cargarMetadatosDeEdicion();
+        }
+      });
+  });
+
+  async function cargarMetadatosDeEdicion() {
+    try {
+      const res = await fetch(`/get_metadata/servicios/${EDIT_FILENAME}`);
+      const result = await res.json();
+      if (result.success) {
+        const data = result.data;
+        
+        // Cargar campos básicos
+        document.getElementById('oc-number').value = data.oc_number || '';
+        document.getElementById('razon-social').value = data.razon_social || '';
+        document.getElementById('ruc').value = data.ruc || '';
+        document.getElementById('direccion').value = data.direccion || '';
+        document.getElementById('solicitante').value = data.solicitante || 'MARKETING';
+        document.getElementById('encargado').value = data.encargado || 'TATYANE AYALA';
+        document.getElementById('fecha').value = data.fecha || '';
+        document.getElementById('motivo').value = data.motivo || '';
+        
+        // Proveedor
+        document.getElementById('prov-nombre').value = data.prov_nombre || '';
+        document.getElementById('prov-ruc').value = data.prov_ruc || '';
+        document.getElementById('prov-cta-soles').value = data.prov_cta_soles || '';
+        document.getElementById('prov-cta-dolares').value = data.prov_cta_dolares || '';
+        document.getElementById('prov-dir').value = data.prov_dir || '';
+        document.getElementById('prov-banco').value = data.prov_banco || 'BCP';
+        document.getElementById('prov-contacto-nombre').value = data.prov_contacto_nombre || '';
+        document.getElementById('prov-contacto-telefono').value = data.prov_contacto_telefono || data.prov_contacto || '';
+        
+        // Firmas
+        document.getElementById('sig-sistemas-name').value = data.sig_sistemas_name || 'TATYANE AYALA';
+        document.getElementById('sig-gerente-name').value = data.sig_gerente_name || 'RICARDO INGA';
+        
+        // Toggles de Moneda e IGV
+        simboloMoneda = data.simbolo_moneda || 'S/';
+        preciosConIGV = data.precios_con_igv !== undefined ? data.precios_con_igv : true;
+        
+        // Actualizar UI del toggle de moneda
+        const btnCurrency = document.getElementById('btn-currency-toggle');
+        if (simboloMoneda === '$') {
+          simboloMoneda = '$';
+          btnCurrency.textContent = "💱 Moneda: Dólares ($)";
+        } else {
+          simboloMoneda = 'S/';
+          btnCurrency.textContent = "💱 Moneda: Soles (S/)";
+        }
+        
+        // Actualizar UI del toggle de IGV
+        const btnIGV = document.getElementById('btn-igv-toggle');
+        const headerTotal = document.getElementById('col-total-header');
+        if (preciosConIGV) {
+          btnIGV.textContent = "Precios INCLUYEN IGV";
+          btnIGV.className = "btn btn-primary";
+          headerTotal.textContent = "Total";
+        } else {
+          btnIGV.textContent = "Precios SIN IGV";
+          btnIGV.className = "btn btn-outline";
+          headerTotal.textContent = "Total sin IGV";
+        }
+        
+        // Limpiar tabla e insertar ítems
+        document.getElementById('items-body').innerHTML = '';
+        if (data.items && data.items.length > 0) {
+          data.items.forEach(item => addRow(item));
+        } else {
+          initialItems.forEach(addRow);
+        }
+        recalc();
+      } else {
+        alert("⚠️ No se pudieron cargar los metadatos para editar este archivo: " + result.message);
+      }
+    } catch (e) {
+      console.error(e);
+      alert("❌ Error al conectar con el servidor para obtener los datos de edición.");
+    }
+  }
+
+  // Autocomplete
+  inputProv.addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    dropdownMenu.innerHTML = '';
+    
+    if (!val) {
+      dropdownMenu.style.display = 'none';
+      return;
+    }
+
+    const filtrados = listaProveedores.filter(p => p.nombre.toLowerCase().includes(val));
+
+    if (filtrados.length > 0) {
+      dropdownMenu.style.display = 'block';
+      filtrados.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.textContent = p.nombre;
+        
+        item.onclick = () => {
+          inputProv.value = p.nombre;
+          document.getElementById('prov-ruc').value = p.ruc;
+          document.getElementById('prov-dir').value = p.direccion;
+          document.getElementById('prov-banco').value = p.banco || 'BCP';
+          document.getElementById('prov-contacto-nombre').value = p.contacto_nombre || '';
+          document.getElementById('prov-contacto-telefono').value = p.contacto_telefono || p.contacto || '';
+          document.getElementById('prov-cta-soles').value = p.cuenta_soles || '';
+          document.getElementById('prov-cta-dolares').value = p.cuenta_dolares || '';
+          dropdownMenu.style.display = 'none';
+        };
+        dropdownMenu.appendChild(item);
+      });
+    } else {
+      dropdownMenu.style.display = 'none';
+    }
+  });
+
+  // Dropdown mis empresas
+  function renderizarDropdownEmpresas(filtro = '') {
+    dropdownEmpresa.innerHTML = '';
+    const filtradas = listaMisEmpresas.filter(e => 
+      e.razon_social.toLowerCase().includes(filtro.toLowerCase())
+    );
+
+    if (filtradas.length > 0) {
+      dropdownEmpresa.style.display = 'block';
+      filtradas.forEach(e => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.textContent = e.razon_social;
+        
+        item.onclick = (event) => {
+          event.stopPropagation();
+          inputEmpresa.value = e.razon_social;
+          document.getElementById('ruc').value = e.ruc || '';
+          document.getElementById('direccion').value = e.direccion || '';
+          dropdownEmpresa.style.display = 'none';
+        };
+        dropdownEmpresa.appendChild(item);
+      });
+    } else {
+      dropdownEmpresa.style.display = 'none';
+    }
+  }
+
+  inputEmpresa.addEventListener('focus', function() {
+    renderizarDropdownEmpresas('');
+  });
+  inputEmpresa.addEventListener('click', function(e) {
+    e.stopPropagation();
+    renderizarDropdownEmpresas('');
+  });
+  inputEmpresa.addEventListener('input', function() {
+    renderizarDropdownEmpresas(this.value);
+  });
+
+  document.addEventListener('click', function(e) {
+    if (e.target !== inputProv) {
+      dropdownMenu.style.display = 'none';
+    }
+    if (e.target !== inputEmpresa) {
+      dropdownEmpresa.style.display = 'none';
+    }
+  });
+
+  async function registrarProv() {
+    const p = {
+      nombre: document.getElementById('prov-nombre').value,
+      ruc: document.getElementById('prov-ruc').value,
+      direccion: document.getElementById('prov-dir').value,
+      banco: document.getElementById('prov-banco').value,
+      contacto_nombre: document.getElementById('prov-contacto-nombre').value,
+      contacto_telefono: document.getElementById('prov-contacto-telefono').value,
+      contacto: document.getElementById('prov-contacto-telefono').value,
+      cuenta_soles: document.getElementById('prov-cta-soles').value,
+      cci: '',
+      cuenta_dolares: document.getElementById('prov-cta-dolares').value
+    };
+    if (!p.nombre) return;
+    
+    try {
+      const res = await fetch('/guardar_proveedor', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(p)
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        const pRes = await fetch('/get_proveedores?_=' + Date.now());
+        listaProveedores = await pRes.json();
+      }
+    } catch (e) {
+      console.error("Error al registrar proveedor:", e);
+    }
+  }
+
+  let preciosConIGV = true; 
+  let simboloMoneda = 'S/';
+
+  function toggleCurrency() {
+    const btn = document.getElementById('btn-currency-toggle');
+    if (simboloMoneda === 'S/') {
+      simboloMoneda = '$';
+      btn.textContent = "💱 Moneda: Dólares ($)";
+    } else {
+      simboloMoneda = 'S/';
+      btn.textContent = "💱 Moneda: Soles (S/)";
+    }
+    recalc();
+  }
+
+  function toggleIGV() {
+    preciosConIGV = !preciosConIGV;
+    const btn = document.getElementById('btn-igv-toggle');
+    const headerTotal = document.getElementById('col-total-header');
+    
+    if (preciosConIGV) {
+      btn.textContent = "Precios INCLUYEN IGV";
+      btn.className = "btn btn-primary";
+      headerTotal.textContent = "Total";
+    } else {
+      btn.textContent = "Precios SIN IGV";
+      btn.className = "btn btn-outline";
+      headerTotal.textContent = "Total sin IGV";
+    }
+    recalc();
+  }
+
+  const initialItems = [
+    { servicio: '', qty: 1, unit: ''},
+    { servicio: '', qty: 1, unit: ''},
+    { servicio: '', qty: 1, unit: ''},
+  ];
+
+  function addRow(data = {}) {
+    const tbody = document.getElementById('items-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <input type="text" class="print-hide" value="${data.servicio||''}" placeholder="Descripción del servicio" oninput="recalc()">
+        <span class="print-show">${data.servicio||''}</span>
+      </td>
+      <td class="num"><input type="number" value="${data.qty !== undefined ? data.qty : 1}" min="0" oninput="recalc()"></td>
+      <td class="money"><input type="number" value="${data.unit !== undefined ? data.unit : ''}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
+      <td class="total-cell">${simboloMoneda} 0.00</td>
+      <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    recalc();
+  }
+
+  function delRow(btn) {
+    btn.closest('tr').remove();
+    recalc();
+  }
+
+  function recalc() {
+    const rows = document.querySelectorAll('#items-body tr');
+    let sumaLineas = 0;
+    
+    rows.forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      const qty  = parseFloat(inputs[1]?.value) || 0;
+      const unit = parseFloat(inputs[2]?.value) || 0;
+      const line = qty * unit;
+      sumaLineas += line;
+      tr.querySelector('.total-cell').textContent = simboloMoneda + ' ' + line.toFixed(2);
+      
+      inputs.forEach(input => {
+        const span = input.nextElementSibling;
+        if (span && span.classList.contains('print-show')) {
+          span.textContent = input.value;
+        }
+      });
+    });
+
+    let subtotal, igv, total;
+
+    if (preciosConIGV) {
+      total = sumaLineas;
+      subtotal = total / 1.18;
+      igv = total - subtotal;
+    } else {
+      subtotal = sumaLineas;
+      igv = subtotal * 0.18;
+      total = subtotal + igv;
+    }
+
+    document.getElementById('subtotal').textContent  = simboloMoneda + ' ' + subtotal.toFixed(2);
+    document.getElementById('igv-val').textContent   = simboloMoneda + ' ' + igv.toFixed(2);
+    document.getElementById('total-igv').textContent = simboloMoneda + ' ' + total.toFixed(2);
+    document.getElementById('footer-total').textContent = 'TOTAL CON IGV: ' + simboloMoneda + ' ' + total.toFixed(2);
+  }
+
+  function clearForm() {
+    if (!confirm('¿Limpiar todos los datos del formulario?')) return;
+    document.getElementById('items-body').innerHTML = '';
+    recalc();
+  }
+
+  async function guardarEnHistorial() {
+    const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Orden de Servicio?' : '¿Deseas guardar esta Orden de Servicio en el historial?';
+    if (!confirm(confirmMsg)) return;
+
+    await registrarProv(); 
+    window.scrollTo(0, 0);
+
+    const elemento = document.getElementById('oc-doc');
+    const numeroOS = document.getElementById('oc-number').value || 'SinNumero';
+    const nombreArchivo = `OS_${numeroOS}.pdf`;
+
+    const items = [];
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      if (inputs.length >= 3) {
+        items.push({
+          servicio: inputs[0].value
+        });
+      }
+    });
+
+    const itemsCompleto = [];
+    document.querySelectorAll('#items-body tr').forEach(tr => {
+      const inputs = tr.querySelectorAll('input');
+      if (inputs.length >= 3) {
+        itemsCompleto.push({
+          servicio: inputs[0].value,
+          qty: parseFloat(inputs[1].value) || 0,
+          unit: parseFloat(inputs[2].value) || 0
+        });
+      }
+    });
+
+    const metadata = {
+      oc_number: numeroOS,
+      razon_social: document.getElementById('razon-social').value,
+      ruc: document.getElementById('ruc').value,
+      direccion: document.getElementById('direccion').value,
+      solicitante: document.getElementById('solicitante').value,
+      encargado: document.getElementById('encargado').value,
+      fecha: document.getElementById('fecha').value,
+      motivo: document.getElementById('motivo').value,
+      
+      prov_nombre: document.getElementById('prov-nombre').value,
+      prov_ruc: document.getElementById('prov-ruc').value,
+      prov_cta_soles: document.getElementById('prov-cta-soles').value,
+      prov_cci: '',
+      prov_cta_dolares: document.getElementById('prov-cta-dolares').value,
+      prov_dir: document.getElementById('prov-dir').value,
+      prov_banco: document.getElementById('prov-banco').value,
+      prov_contacto_nombre: document.getElementById('prov-contacto-nombre').value,
+      prov_contacto_telefono: document.getElementById('prov-contacto-telefono').value,
+      prov_contacto: document.getElementById('prov-contacto-telefono').value,
+      
+      sig_sistemas_name: document.getElementById('sig-sistemas-name').value,
+      sig_gerente_name: document.getElementById('sig-gerente-name').value,
+      
+      simbolo_moneda: simboloMoneda,
+      precios_con_igv: preciosConIGV,
+      items: itemsCompleto
+    };
+
+    const opciones = {
+      margin:       [10, 10, 10, 10], 
+      filename:     nombreArchivo,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        scrollY: 0, 
+        windowWidth: document.documentElement.scrollWidth
+      },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: 'avoid-all' }
+    };
+
+    elemento.classList.add('pdf-printing');
+    const temaOriginal = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', 'light');
+
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+      document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
+      elemento.classList.remove('pdf-printing');
+      const formData = new FormData();
+      formData.append('pdf', pdfBlob, nombreArchivo);
+      formData.append('items', JSON.stringify(items));
+      formData.append('edit_mode', EDIT_MODE ? 'true' : 'false');
+      formData.append('metadata', JSON.stringify(metadata));
+
+      fetch('/guardar_pdf', {
+        method: 'POST',
+        body: formData
+      })
+      .then(respuesta => respuesta.json())
+      .then(datos => {
+        if (datos.success) {
+          alert('✅ ¡Guardado exitosamente en la carpeta historial!');
+          if (EDIT_MODE) {
+            window.location.href = '/historial';
+          }
+        } else {
+          alert('❌ Error del servidor: ' + datos.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error de conexión al intentar guardar.');
+      });
+    });
+  }
+
+  if (!EDIT_MODE) {
+    initialItems.forEach(addRow);
+  }
+</script>
+
+<script>
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+</script>
+</body>
+</html>
