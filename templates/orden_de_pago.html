@@ -95,13 +95,13 @@
 <body>
 
 <div class="toolbar no-print">
-  <h1>📋 Generador de Orden de Pago</h1>
-  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">🏠</button>
+  <h1>Generador de Orden de Pago</h1>
+  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">Inicio</button>
   
-  <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">💱 Moneda: Soles (S/)</button>
+  <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">Moneda: Soles (S/)</button>
   <button class="btn btn-outline" onclick="addRow()">＋ Agregar Fila</button>
-  <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
-  <button class="btn btn-success" onclick="guardarEnHistorial()">💾 Guardar</button>
+  <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+  <button class="btn btn-success" onclick="guardarEnHistorial()">Guardar</button>
 </div>
 
 <div class="card" id="oc-doc" style="padding: 0; overflow: hidden;">
@@ -359,7 +359,7 @@
         
         // Moneda
         simboloMoneda = data.simbolo_moneda || 'S/';
-        document.getElementById('btn-currency-toggle').textContent = simboloMoneda === 'S/' ? "💱 Moneda: Soles (S/)" : "💱 Moneda: Dólares ($)";
+        document.getElementById('btn-currency-toggle').textContent = simboloMoneda === 'S/' ? "Moneda: Soles (S/)" : "Moneda: Dólares ($)";
         
         // Cargar ítems de la tabla
         document.getElementById('items-body').innerHTML = '';
@@ -512,10 +512,10 @@
     const btn = document.getElementById('btn-currency-toggle');
     if (simboloMoneda === 'S/') {
       simboloMoneda = '$';
-      btn.textContent = "💱 Moneda: Dólares ($)";
+      btn.textContent = "Moneda: Dólares ($)";
     } else {
       simboloMoneda = 'S/';
-      btn.textContent = "💱 Moneda: Soles (S/)";
+      btn.textContent = "Moneda: Soles (S/)";
     }
     recalc();
   }

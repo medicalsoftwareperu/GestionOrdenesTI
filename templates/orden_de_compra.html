@@ -10,15 +10,15 @@
 <body>
 
 <div class="toolbar">
-  <h1>📋 Generador de Orden de Compra</h1>
+  <h1>Generador de Orden de Compra</h1>
   
-  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">🏠</button>
+  <button class="btn btn-outline" onclick="window.location.href='/'" style="margin-right: auto;">Inicio</button>
   
-  <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">💱 Moneda: Soles (S/)</button>
+  <button id="btn-currency-toggle" class="btn btn-outline" onclick="toggleCurrency()">Moneda: Soles (S/)</button>
   <button id="btn-igv-toggle" class="btn btn-primary" onclick="toggleIGV()">Precios INCLUYEN IGV</button>
   <button class="btn btn-success" onclick="addRow()">＋ Agregar ítem</button>
-  <button class="btn btn-primary" onclick="window.print()">🖨 Imprimir</button>
-  <button class="btn btn-outline" onclick="clearForm()">🗑 Limpiar todo</button>
+  <button class="btn btn-primary" onclick="window.print()">Imprimir</button>
+  <button class="btn btn-outline" onclick="clearForm()">Limpiar todo</button>
 </div>
 
 <div class="card" id="oc-doc">
@@ -212,7 +212,7 @@
 </div> <div class="no-print"; style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
   
   <button class="btn btn-success" style="background-color: #27ae60; font-size: 16px; padding: 12px 30px; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);" onclick="guardarEnHistorial()">
-    💾 Guardar Documento en el Historial
+    Guardar Documento en el Historial
   </button>
 
 </div>
@@ -300,10 +300,10 @@
         const btnCurrency = document.getElementById('btn-currency-toggle');
         if (simboloMoneda === '$') {
           simboloMoneda = '$'; // Asegurar el valor
-          btnCurrency.textContent = "💱 Moneda: Dólares ($)";
+          btnCurrency.textContent = "Moneda: Dólares ($)";
         } else {
           simboloMoneda = 'S/';
-          btnCurrency.textContent = "💱 Moneda: Soles (S/)";
+          btnCurrency.textContent = "Moneda: Soles (S/)";
         }
         
         // Actualizar UI del toggle de IGV
@@ -467,10 +467,10 @@
     const btn = document.getElementById('btn-currency-toggle');
     if (simboloMoneda === 'S/') {
       simboloMoneda = '$';
-      btn.textContent = "💱 Moneda: Dólares ($)";
+      btn.textContent = "Moneda: Dólares ($)";
     } else {
       simboloMoneda = 'S/';
-      btn.textContent = "💱 Moneda: Soles (S/)";
+      btn.textContent = "Moneda: Soles (S/)";
     }
     recalc(); // Actualizamos todos los textos
   }
