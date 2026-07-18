@@ -29,15 +29,19 @@ TI_USER = os.getenv('TI_USERNAME', 'admin')
 TI_PASS = os.getenv('TI_PASSWORD', 'sistemas')
 CONTA_USER = os.getenv('CONTA_USERNAME', 'conta')
 CONTA_PASS = os.getenv('CONTA_PASSWORD', 'conta123')
+MKT_USER = os.getenv('MARKETING_USERNAME', 'marketing')
+MKT_PASS = os.getenv('MARKETING_PASSWORD', 'marketing2026')
 
 USER_CREDENTIALS = {
     TI_USER: TI_PASS,
-    CONTA_USER: CONTA_PASS
+    CONTA_USER: CONTA_PASS,
+    MKT_USER: MKT_PASS
 }
 
 USER_ROLES = {
     TI_USER: 'sistemas',
-    CONTA_USER: 'contabilidad'
+    CONTA_USER: 'contabilidad',
+    MKT_USER: 'marketing'
 }
 
 # --- CONFIGURACIÓN DE CARPETAS ---
