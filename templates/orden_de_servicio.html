@@ -180,6 +180,12 @@
     </div>
   </div>
 
+  <div class="section-title">Notas</div>
+  <div style="padding: 10px 16px; border-bottom: 2px solid var(--gray-mid);">
+    <textarea class="print-hide" id="notas" placeholder="Escribe notas u observaciones adicionales aquí..." oninput="autoExpand(this); recalc()" style="width: 100%; border: 1px solid var(--gray-mid); border-radius: 4px; padding: 8px 12px; resize: none; min-height: 80px; font-family: inherit; font-size: 13px; background: transparent; color: inherit; outline: none; box-sizing: border-box; overflow-y: hidden; display: block;"></textarea>
+    <div class="print-show" id="print-notas" style="white-space: pre-wrap; font-size: 13px; padding: 4px 0;"></div>
+  </div>
+
   <div class="sigs">
     <div class="sig-box">
       <div class="sig-line"></div>
@@ -270,6 +276,13 @@
         // Firmas
         document.getElementById('sig-sistemas-name').value = data.sig_sistemas_name || 'TATYANE AYALA';
         document.getElementById('sig-gerente-name').value = data.sig_gerente_name || 'RICARDO INGA';
+        
+        // Notas
+        const notasField = document.getElementById('notas');
+        if (notasField) {
+          notasField.value = data.notas || '';
+          autoExpand(notasField);
+        }
         
         // Toggles de Moneda e IGV
         simboloMoneda = data.simbolo_moneda || 'S/';
@@ -541,6 +554,13 @@
     document.getElementById('igv-val').textContent   = simboloMoneda + ' ' + igv.toFixed(2);
     document.getElementById('total-igv').textContent = simboloMoneda + ' ' + total.toFixed(2);
     document.getElementById('footer-total').textContent = 'TOTAL CON IGV: ' + simboloMoneda + ' ' + total.toFixed(2);
+
+    // Sincronizar Notas
+    const notasTextarea = document.getElementById('notas');
+    const printNotas = document.getElementById('print-notas');
+    if (notasTextarea && printNotas) {
+      printNotas.textContent = notasTextarea.value;
+    }
   }
 
   function clearForm() {
@@ -609,7 +629,8 @@
       
       simbolo_moneda: simboloMoneda,
       precios_con_igv: preciosConIGV,
-      items: itemsCompleto
+      items: itemsCompleto,
+      notas: document.getElementById('notas').value
     };
 
     const opciones = {
