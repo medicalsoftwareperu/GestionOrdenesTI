@@ -17,10 +17,11 @@
     outline: none;
     padding: 6px 8px;
     text-align: inherit;
-    resize: vertical;
+    resize: none;
     min-height: 90px;
     box-sizing: border-box;
     display: block;
+    overflow-y: hidden;
   }
   table.items-table tbody td textarea:focus { background: var(--input-focus-bg); border-radius: 3px; }
   .print-show {
@@ -466,12 +467,17 @@
     { servicio: '', qty: 1, unit: ''},
   ];
 
+  function autoExpand(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+  }
+
   function addRow(data = {}) {
     const tbody = document.getElementById('items-body');
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>
-        <textarea class="print-hide" placeholder="Detalle del servicio..." oninput="recalc()">${data.servicio||''}</textarea>
+        <textarea class="print-hide" placeholder="Detalle del servicio..." oninput="autoExpand(this); recalc()">${data.servicio||''}</textarea>
         <span class="print-show">${data.servicio||''}</span>
       </td>
       <td class="num"><input type="number" value="${data.qty !== undefined ? data.qty : 1}" min="0" oninput="recalc()"></td>
@@ -480,6 +486,10 @@
       <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
     `;
     tbody.appendChild(tr);
+    const textarea = tr.querySelector('textarea');
+    if (textarea) {
+      autoExpand(textarea);
+    }
     recalc();
   }
 
