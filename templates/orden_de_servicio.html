@@ -6,6 +6,28 @@
 <title>Orden de Servicio - Marketing</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.2">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  table.items-table tbody td textarea {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12.5px;
+    color: var(--text);
+    outline: none;
+    padding: 6px 8px;
+    text-align: inherit;
+    resize: vertical;
+    min-height: 90px;
+    box-sizing: border-box;
+    display: block;
+  }
+  table.items-table tbody td textarea:focus { background: var(--input-focus-bg); border-radius: 3px; }
+  .print-show {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+</style>
 </head>
 <body>
 
@@ -442,8 +464,6 @@
 
   const initialItems = [
     { servicio: '', qty: 1, unit: ''},
-    { servicio: '', qty: 1, unit: ''},
-    { servicio: '', qty: 1, unit: ''},
   ];
 
   function addRow(data = {}) {
@@ -451,7 +471,7 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>
-        <input type="text" class="print-hide" value="${data.servicio||''}" placeholder="Descripción del servicio" oninput="recalc()">
+        <textarea class="print-hide" placeholder="Detalle del servicio..." oninput="recalc()">${data.servicio||''}</textarea>
         <span class="print-show">${data.servicio||''}</span>
       </td>
       <td class="num"><input type="number" value="${data.qty !== undefined ? data.qty : 1}" min="0" oninput="recalc()"></td>
@@ -474,8 +494,9 @@
     
     rows.forEach(tr => {
       const inputs = tr.querySelectorAll('input');
-      const qty  = parseFloat(inputs[1]?.value) || 0;
-      const unit = parseFloat(inputs[2]?.value) || 0;
+      const textarea = tr.querySelector('textarea');
+      const qty  = parseFloat(inputs[0]?.value) || 0;
+      const unit = parseFloat(inputs[1]?.value) || 0;
       const line = qty * unit;
       sumaLineas += line;
       tr.querySelector('.total-cell').textContent = simboloMoneda + ' ' + line.toFixed(2);
@@ -486,6 +507,12 @@
           span.textContent = input.value;
         }
       });
+      if (textarea) {
+        const span = textarea.nextElementSibling;
+        if (span && span.classList.contains('print-show')) {
+          span.textContent = textarea.value;
+        }
+      }
     });
 
     let subtotal, igv, total;
@@ -525,10 +552,10 @@
 
     const items = [];
     document.querySelectorAll('#items-body tr').forEach(tr => {
-      const inputs = tr.querySelectorAll('input');
-      if (inputs.length >= 3) {
+      const textarea = tr.querySelector('textarea');
+      if (textarea) {
         items.push({
-          servicio: inputs[0].value
+          servicio: textarea.value
         });
       }
     });
@@ -536,11 +563,12 @@
     const itemsCompleto = [];
     document.querySelectorAll('#items-body tr').forEach(tr => {
       const inputs = tr.querySelectorAll('input');
-      if (inputs.length >= 3) {
+      const textarea = tr.querySelector('textarea');
+      if (inputs.length >= 2 && textarea) {
         itemsCompleto.push({
-          servicio: inputs[0].value,
-          qty: parseFloat(inputs[1].value) || 0,
-          unit: parseFloat(inputs[2].value) || 0
+          servicio: textarea.value,
+          qty: parseFloat(inputs[0].value) || 0,
+          unit: parseFloat(inputs[1].value) || 0
         });
       }
     });
