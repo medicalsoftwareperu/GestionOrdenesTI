@@ -24,13 +24,30 @@
     overflow-y: hidden;
   }
   table.items-table tbody td textarea:focus { background: var(--input-focus-bg); border-radius: 3px; }
+  
   .print-show {
-    white-space: pre-wrap;
-    word-break: break-word;
+    display: none;
+  }
+
+  .pdf-printing .print-hide {
+    display: none !important;
+  }
+  .pdf-printing .print-show {
+    display: block !important;
   }
   .pdf-printing .no-print {
     display: none !important;
   }
+
+  @media print {
+    .print-hide {
+      display: none !important;
+    }
+    .print-show {
+      display: block !important;
+    }
+  }
+
   @media print, .pdf-printing {
     #oc-doc {
       padding: 10px 15px !important;
@@ -81,14 +98,29 @@
       padding: 3px 4px !important;
       font-size: 11.5px !important;
     }
-    #notas {
-      min-height: 50px !important;
+    /* Compact print text in table cell */
+    table.items-table tbody td .print-show {
       font-size: 11px !important;
-      padding: 4px 8px !important;
+      line-height: 1.2 !important;
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+      padding: 2px 4px !important;
+    }
+    
+    #container-notas {
+      padding: 6px 15px !important;
     }
     #print-notas {
+      border: 1px solid var(--gray-mid) !important;
+      border-radius: 4px !important;
+      padding: 6px 10px !important;
       font-size: 11px !important;
-      padding: 2px 0 !important;
+      line-height: 1.25 !important;
+      background: transparent !important;
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+      min-height: 40px !important;
+      display: block !important;
     }
     .img-preview-box img {
       max-height: 85px !important;
@@ -288,7 +320,7 @@
   </div>
 
   <div class="section-title">Notas</div>
-  <div style="padding: 10px 16px; border-bottom: 2px solid var(--gray-mid);">
+  <div id="container-notas" style="padding: 10px 16px; border-bottom: 2px solid var(--gray-mid);">
     <textarea class="print-hide" id="notas" placeholder="Escribe notas u observaciones adicionales aquí..." oninput="autoExpand(this); recalc()" style="width: 100%; border: 1px solid var(--gray-mid); border-radius: 4px; padding: 8px 12px; resize: none; min-height: 80px; font-family: inherit; font-size: 13px; background: transparent; color: inherit; outline: none; box-sizing: border-box; overflow-y: hidden; display: block;"></textarea>
     <div class="print-show" id="print-notas" style="white-space: pre-wrap; font-size: 13px; padding: 4px 0;"></div>
   </div>
