@@ -28,6 +28,9 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
+  .pdf-printing .no-print {
+    display: none !important;
+  }
 </style>
 </head>
 <body>
@@ -180,6 +183,16 @@
     </div>
   </div>
 
+  <div class="section-title" id="titulo-seccion-imagenes">Imágenes Adjuntas</div>
+  <div class="no-print" style="padding: 10px 16px; display: flex; gap: 10px; align-items: center;">
+    <button class="btn btn-outline" onclick="document.getElementById('input-imagenes').click()" style="padding: 6px 12px; font-size: 13px; cursor: pointer;">Adjuntar Imágenes</button>
+    <input type="file" id="input-imagenes" accept="image/*" multiple style="display: none;" onchange="procesarImagenesAdjuntas(this)">
+    <span class="text-muted" style="font-size: 12px;">Formatos: JPG, PNG (se comprimen automáticamente para impresión).</span>
+  </div>
+  <div id="contenedor-imagenes-galeria" style="padding: 10px 16px; display: none; flex-wrap: wrap; gap: 12px; border-bottom: 2px solid var(--gray-mid); min-height: 20px;">
+    <!-- Aquí se cargarán las miniaturas -->
+  </div>
+
   <div class="section-title">Notas</div>
   <div style="padding: 10px 16px; border-bottom: 2px solid var(--gray-mid);">
     <textarea class="print-hide" id="notas" placeholder="Escribe notas u observaciones adicionales aquí..." oninput="autoExpand(this); recalc()" style="width: 100%; border: 1px solid var(--gray-mid); border-radius: 4px; padding: 8px 12px; resize: none; min-height: 80px; font-family: inherit; font-size: 13px; background: transparent; color: inherit; outline: none; box-sizing: border-box; overflow-y: hidden; display: block;"></textarea>
@@ -283,6 +296,10 @@
           notasField.value = data.notas || '';
           autoExpand(notasField);
         }
+        
+        // Cargar imágenes
+        imagenesBase64 = data.imagenes || [];
+        renderizarGaleriaImagenes();
         
         // Toggles de Moneda e IGV
         simboloMoneda = data.simbolo_moneda || 'S/';
@@ -476,6 +493,87 @@
     recalc();
   }
 
+  let imagenesBase64 = []; // List of images base64 encoded
+
+  function procesarImagenesAdjuntas(input) {
+    if (!input.files || input.files.length === 0) return;
+    
+    Array.from(input.files).forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor, selecciona solo archivos de imagen.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          const MAX_WIDTH = 800;
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          imagenesBase64.push(compressedBase64);
+          renderizarGaleriaImagenes();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    input.value = '';
+  }
+
+  function renderizarGaleriaImagenes() {
+    const contenedor = document.getElementById('contenedor-imagenes-galeria');
+    const titulo = document.getElementById('titulo-seccion-imagenes');
+    if (!contenedor) return;
+    
+    contenedor.innerHTML = '';
+    
+    if (imagenesBase64.length === 0) {
+      contenedor.style.display = 'none';
+      if (titulo) {
+        titulo.classList.add('print-hide');
+      }
+      return;
+    }
+    
+    contenedor.style.display = 'flex';
+    if (titulo) {
+      titulo.classList.remove('print-hide');
+    }
+    
+    imagenesBase64.forEach((base64Data, index) => {
+      const box = document.createElement('div');
+      box.className = 'img-preview-box';
+      box.style.position = 'relative';
+      box.style.display = 'inline-block';
+      box.innerHTML = `
+        <img src="${base64Data}" style="max-height: 120px; border-radius: 4px; border: 1px solid var(--gray-mid); display: block;">
+        <button class="no-print del-img-btn" onclick="eliminarImagen(${index})" title="Eliminar imagen" style="position: absolute; top: -5px; right: -5px; background: rgba(192, 44, 44, 0.9); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer;">✕</button>
+      `;
+      contenedor.appendChild(box);
+    });
+  }
+
+  function eliminarImagen(index) {
+    imagenesBase64.splice(index, 1);
+    renderizarGaleriaImagenes();
+  }
+
   const initialItems = [
     { servicio: '', qty: 1, unit: ''},
   ];
@@ -566,6 +664,10 @@
   function clearForm() {
     if (!confirm('¿Limpiar todos los datos del formulario?')) return;
     document.getElementById('items-body').innerHTML = '';
+    const notasField = document.getElementById('notas');
+    if (notasField) notasField.value = '';
+    imagenesBase64 = [];
+    renderizarGaleriaImagenes();
     recalc();
   }
 
@@ -630,7 +732,8 @@
       simbolo_moneda: simboloMoneda,
       precios_con_igv: preciosConIGV,
       items: itemsCompleto,
-      notas: document.getElementById('notas').value
+      notas: document.getElementById('notas').value,
+      imagenes: imagenesBase64
     };
 
     const opciones = {
