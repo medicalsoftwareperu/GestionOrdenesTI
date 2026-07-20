@@ -31,6 +31,100 @@
   .pdf-printing .no-print {
     display: none !important;
   }
+  @media print, .pdf-printing {
+    #oc-doc {
+      padding: 10px 15px !important;
+      margin: 0 !important;
+      max-width: 100% !important;
+      box-shadow: none !important;
+    }
+    .doc-header {
+      margin-bottom: 6px !important;
+      padding-bottom: 6px !important;
+    }
+    .logo-cell img {
+      max-height: 48px !important;
+    }
+    .doc-title {
+      font-size: 20px !important;
+    }
+    .section-title {
+      font-size: 11px !important;
+      padding: 3px 0 !important;
+      letter-spacing: 1px !important;
+    }
+    .data-grid {
+      margin-bottom: 6px !important;
+    }
+    .data-cell {
+      padding: 3px 6px !important;
+      min-height: 28px !important;
+      font-size: 11px !important;
+    }
+    .field, .data-cell input {
+      font-size: 12px !important;
+      padding: 1px 2px !important;
+    }
+    .provider-col {
+      padding: 6px 10px !important;
+      gap: 4px !important;
+    }
+    .provider-row {
+      margin-bottom: 2px !important;
+      font-size: 11px !important;
+    }
+    table.items-table thead th {
+      padding: 5px 6px !important;
+      font-size: 11px !important;
+    }
+    table.items-table tbody td {
+      padding: 3px 4px !important;
+      font-size: 11.5px !important;
+    }
+    #notas {
+      min-height: 50px !important;
+      font-size: 11px !important;
+      padding: 4px 8px !important;
+    }
+    #print-notas {
+      font-size: 11px !important;
+      padding: 2px 0 !important;
+    }
+    .img-preview-box img {
+      max-height: 85px !important;
+    }
+    .totals-area {
+      padding: 4px 10px !important;
+      margin-top: 4px !important;
+      gap: 15px !important;
+    }
+    .total-lbl {
+      font-size: 10px !important;
+    }
+    .total-val {
+      font-size: 15px !important;
+    }
+    .total-val.grand {
+      font-size: 18px !important;
+    }
+    .sigs {
+      margin-top: 15px !important;
+    }
+    .sig-box {
+      padding: 10px 16px 5px !important;
+    }
+    .sig-line {
+      margin: 20px auto 6px !important;
+    }
+    .doc-footer {
+      margin-top: 8px !important;
+      padding-top: 4px !important;
+      font-size: 10px !important;
+    }
+    .doc-footer #footer-total {
+      font-size: 12px !important;
+    }
+  }
 </style>
 </head>
 <body>
