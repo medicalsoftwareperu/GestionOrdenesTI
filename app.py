@@ -2,7 +2,7 @@ import os
 import re
 import sqlite3
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import hashlib
 import hmac
@@ -630,7 +630,61 @@ def logout():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', puede_ver_auditoria=puede_ver_auditoria())
+
+
+def puede_ver_auditoria():
+    return session.get('usuario') == TI_USER and session.get('rol') == 'sistemas'
+
+
+@app.route('/auditoria')
+def auditoria():
+    if not puede_ver_auditoria():
+        return 'No tienes permiso para consultar la auditoría.', 403
+    filtros = {clave: request.args.get(clave, '').strip()[:200]
+               for clave in ('buscar', 'rol', 'accion')}
+    condiciones, valores = [], []
+    for clave in ('rol', 'accion'):
+        if filtros[clave]:
+            condiciones.append(clave + ' = ?')
+            valores.append(filtros[clave])
+    if filtros['buscar']:
+        texto = filtros['buscar'].replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        condiciones.append("(nombre LIKE ? ESCAPE '\\' OR usuario LIKE ? ESCAPE '\\')")
+        valores.extend(['%' + texto + '%'] * 2)
+    donde = ' WHERE ' + ' AND '.join(condiciones) if condiciones else ''
+    try:
+        pagina = max(1, int(request.args.get('pagina', '1')))
+    except ValueError:
+        pagina = 1
+    conn = get_db_connection()
+    try:
+        total = conn.execute('SELECT COUNT(*) FROM auditoria' + donde, valores).fetchone()[0]
+        paginas = max(1, (total + 49) // 50)
+        pagina = min(pagina, paginas)
+        registros = [dict(row) for row in conn.execute(
+            'SELECT fecha, usuario, rol, accion, tipo, nombre, detalle FROM auditoria' +
+            donde + ' ORDER BY id DESC LIMIT 50 OFFSET ?', valores + [(pagina - 1) * 50])]
+        acciones = [row[0] for row in conn.execute('SELECT DISTINCT accion FROM auditoria ORDER BY accion')]
+    finally:
+        conn.close()
+    for registro in registros:
+        try:
+            fecha = datetime.fromisoformat(registro['fecha'])
+            if fecha.tzinfo is None:
+                fecha = fecha.replace(tzinfo=timezone.utc)
+            registro['fecha_local'] = fecha.astimezone(timezone(timedelta(hours=-5))).strftime('%d/%m/%Y %H:%M:%S')
+        except (ValueError, TypeError):
+            registro['fecha_local'] = registro['fecha']
+        try:
+            detalle = json.loads(registro['detalle'])
+            registro['orden_compra'] = detalle.get('orden_compra', '') if isinstance(detalle, dict) else ''
+        except (ValueError, TypeError):
+            registro['orden_compra'] = ''
+    respuesta = app.make_response(render_template('auditoria.html', registros=registros,
+        filtros=filtros, acciones=acciones, total=total, pagina=pagina, paginas=paginas))
+    respuesta.headers['Cache-Control'] = 'no-store'
+    return respuesta
 
 @app.route('/compras')
 def compras():

@@ -106,6 +106,17 @@
                 </div>
             </div>
         </div>
+        {% if puede_ver_auditoria %}
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-secondary">
+                <div class="card-body text-center">
+                    <h3 class="card-title text-secondary">Auditoría</h3>
+                    <p class="card-text">Consultar las acciones registradas en el sistema por cuenta y área.</p>
+                    <a href="{{ url_for('auditoria') }}" class="btn btn-secondary btn-lg mt-3 w-100">Ver Auditoría</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
