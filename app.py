@@ -1078,49 +1078,82 @@ def guardar_proveedor():
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
 
+def tipos_documentos_por_rol(rol):
+    return [tipo for tipo in ('compras', 'bajas', 'pagos', 'servicios', 'mantenimiento')
+            if configuracion_documento(tipo)[0] == rol]
+
+
+def documentos_visibles_por_rol(rol):
+    # Comprobar el área, el nombre y la existencia real; no basta con el índice SQLite.
+    documentos = {}
+    for tipo in tipos_documentos_por_rol(rol):
+        for carpeta in configuracion_documento(tipo)[1:3]:
+            for nombre in os.listdir(carpeta):
+                if not nombre.endswith('.pdf'):
+                    continue
+                try:
+                    validar_nombre_documento(tipo, nombre, permitir_historico=True)
+                    if os.path.isfile(ruta_documento_segura(carpeta, nombre)):
+                        documentos[nombre] = tipo
+                except ValueError:
+                    continue
+    return documentos
+
+
+def mapeo_documentos_por_rol(campo, rol):
+    documentos = documentos_visibles_por_rol(rol)
+    mapeo = {}
+    for tipo in tipos_documentos_por_rol(rol):
+        # Conservar la prioridad de la información editada sobre la original.
+        for carpeta in configuracion_documento(tipo)[1:3]:
+            for nombre in os.listdir(carpeta):
+                if not nombre.endswith('.json'):
+                    continue
+                nombre_pdf = nombre[:-5] + '.pdf'
+                if documentos.get(nombre_pdf) != tipo:
+                    continue
+                try:
+                    ruta = ruta_documento_segura(carpeta, nombre)
+                    with open(ruta, encoding='utf-8') as archivo:
+                        datos = json.load(archivo)
+                    valor = datos.get(campo)
+                    if valor:
+                        mapeo[nombre_pdf] = valor
+                except (OSError, ValueError, AttributeError):
+                    continue
+    return mapeo
+
+
 @app.route('/get_mapeo_proveedores')
 @documentos_bloqueados
 def get_mapeo_proveedores():
-    mapeo = {}
-    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS, CARPETA_SERVICIOS, CARPETA_SERVICIOS_EDITADAS, CARPETA_MANTENIMIENTO, CARPETA_MANTENIMIENTO_EDITADAS]:
-        if os.path.exists(carpeta):
-            for f in os.listdir(carpeta):
-                if f.endswith('.json'):
-                    try:
-                        with open(os.path.join(carpeta, f), 'r', encoding='utf-8') as file:
-                            data = json.load(file)
-                            prov = data.get('prov_nombre')
-                            if prov:
-                                mapeo[f.replace('.json', '.pdf')] = prov
-                    except Exception:
-                        pass
-    return jsonify(mapeo)
+    return jsonify(mapeo_documentos_por_rol('prov_nombre', session.get('rol')))
+
 
 @app.route('/get_mapeo_emisores')
 @documentos_bloqueados
 def get_mapeo_emisores():
-    mapeo = {}
-    for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS, CARPETA_SERVICIOS, CARPETA_SERVICIOS_EDITADAS, CARPETA_MANTENIMIENTO, CARPETA_MANTENIMIENTO_EDITADAS]:
-        if os.path.exists(carpeta):
-            for f in os.listdir(carpeta):
-                if f.endswith('.json'):
-                    try:
-                        with open(os.path.join(carpeta, f), 'r', encoding='utf-8') as file:
-                            data = json.load(file)
-                            emisor = data.get('razon_social')
-                            if emisor:
-                                mapeo[f.replace('.json', '.pdf')] = emisor
-                    except Exception:
-                        pass
-    return jsonify(mapeo)
+    return jsonify(mapeo_documentos_por_rol('razon_social', session.get('rol')))
+
 
 @app.route('/buscar_archivos')
+@documentos_bloqueados
 def buscar_archivos():
+    rol = session.get('rol')
+    tipos = tipos_documentos_por_rol(rol)
+    if not tipos:
+        return jsonify([])
     q = request.args.get('q', '').lower()
+    patrones = [configuracion_documento(tipo)[3].split('_', 1)[0] + '_*.pdf' for tipo in tipos]
+    filtros = ' OR '.join('nombre_archivo GLOB ?' for _ in patrones)
     conn = get_db_connection()
-    resultados = conn.execute('SELECT DISTINCT nombre_archivo FROM items_pdf WHERE contenido LIKE ?', (f'%{q}%',)).fetchall()
-    conn.close()
-    return jsonify([r['nombre_archivo'] for r in resultados])
+    try:
+        resultados = conn.execute('SELECT DISTINCT nombre_archivo FROM items_pdf '
+            f'WHERE contenido LIKE ? AND ({filtros})', (f'%{q}%', *patrones)).fetchall()
+    finally:
+        conn.close()
+    documentos = documentos_visibles_por_rol(rol)
+    return jsonify([r['nombre_archivo'] for r in resultados if r['nombre_archivo'] in documentos])
 
 def normalizar_nombre_empresa(name):
     if not name:
