@@ -224,6 +224,19 @@ with get_db_connection() as conn:
         except sqlite3.OperationalError:
             pass
 
+    # Conservar la lista que Mantenimiento veía antes de separar sus proveedores.
+    # La copia se realiza una sola vez y no reemplaza proveedores propios existentes.
+    conn.execute('CREATE TABLE IF NOT EXISTS migraciones_sistema '
+                 '(id TEXT PRIMARY KEY, fecha TEXT NOT NULL)')
+    migracion = 'separar_proveedores_mantenimiento_v1'
+    if not conn.execute('SELECT 1 FROM migraciones_sistema WHERE id = ?', (migracion,)).fetchone():
+        columnas = ('nombre, ruc, direccion, contacto, cuenta_soles, cci, cuenta_dolares, '
+                    'banco, contacto_nombre, contacto_telefono')
+        conn.execute(f'INSERT OR IGNORE INTO proveedores_maint ({columnas}) '
+                     f'SELECT {columnas} FROM proveedores')
+        conn.execute('INSERT INTO migraciones_sistema (id, fecha) VALUES (?, ?)',
+                     (migracion, datetime.now().isoformat()))
+
     conn.commit()
 
 
@@ -402,6 +415,51 @@ def recuperar_guardados_pendientes():
             shutil.rmtree(plan['temporal'], ignore_errors=True)
     finally:
         conn.close()
+
+
+def guardar_archivo_recuperable(destino, contenido):
+    """Publicar un archivo completo bajo bloqueo_documentos y recuperar un reinicio."""
+    conn = get_db_connection()
+    temporal = None
+    registrado = False
+    terminado = False
+    restaurado = False
+    try:
+        temporal = tempfile.mkdtemp(prefix='.guardado-', dir=CARPETA_HISTORIAL)
+        preparado = os.path.join(temporal, os.path.basename(destino))
+        with open(preparado, 'wb') as archivo:
+            archivo.write(contenido)
+            archivo.flush()
+            os.fsync(archivo.fileno())
+        respaldo = preparado + '.anterior' if os.path.exists(destino) else None
+        if respaldo:
+            shutil.copy2(destino, respaldo)
+        plan = {'temporal': temporal, 'archivos': [
+            {'destino': destino, 'preparado': preparado, 'respaldo': respaldo}]}
+        operacion = uuid.uuid4().hex
+        conn.execute('INSERT INTO guardados_pendientes (id, plan) VALUES (?, ?)',
+                     (operacion, json.dumps(plan)))
+        registrado = True
+        conn.commit()
+        os.replace(preparado, destino)
+        conn.execute('DELETE FROM guardados_pendientes WHERE id = ?', (operacion,))
+        conn.commit()
+        terminado = True
+    except Exception:
+        conn.rollback()
+        if registrado:
+            try:
+                restaurar_plan_guardado(plan)
+                conn.execute('DELETE FROM guardados_pendientes WHERE id = ?', (operacion,))
+                conn.commit()
+                restaurado = True
+            except Exception:
+                app.logger.exception('Recuperación pendiente; se conservan diario y respaldo')
+        raise
+    finally:
+        conn.close()
+        if temporal and (terminado or restaurado or not registrado):
+            shutil.rmtree(temporal, ignore_errors=True)
 
 
 # Recuperar una operación interrumpida por un reinicio antes de atender usuarios.
@@ -695,7 +753,10 @@ def subir_factura():
         
     
     try:
-        archivo_pdf.save(ruta_guardado)
+        contenido = archivo_pdf.read()
+        if not contenido.startswith(b'%PDF-'):
+            return jsonify({'success': False, 'message': 'El archivo recibido no es un PDF válido'}), 400
+        guardar_archivo_recuperable(ruta_guardado, contenido)
         return jsonify({'success': True, 'message': 'Factura subida exitosamente'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error al guardar el archivo: {str(e)}'}), 500
@@ -719,7 +780,7 @@ def vincular_oc():
     if rol != 'contabilidad':
         return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
         
-    data = request.json or {}
+    data = request.get_json(silent=True)
     if not isinstance(data, dict):
         return jsonify({'success': False, 'message': 'Datos no válidos'}), 400
     nombre_op = data.get('nombre_op', '')
@@ -751,8 +812,8 @@ def vincular_oc():
         else:
             metadata.pop('orden_compra_referencia', None)
             
-        with open(ruta_json, 'w', encoding='utf-8') as f:
-            json.dump(metadata, f, ensure_ascii=False, indent=2)
+        guardar_archivo_recuperable(ruta_json,
+            json.dumps(metadata, ensure_ascii=False, indent=2).encode('utf-8'))
             
         return jsonify({'success': True, 'message': 'Vínculo actualizado exitosamente'})
     except Exception as e:
@@ -974,15 +1035,16 @@ def get_mis_empresas():
     conn.close()
     return jsonify([dict(e) for e in empresas])
 
+def tabla_proveedores_por_rol(rol):
+    return {'sistemas': 'proveedores', 'contabilidad': 'proveedores_conta',
+            'marketing': 'proveedores_mkt', 'mantenimiento': 'proveedores_maint'}.get(rol)
+
+
 @app.route('/get_proveedores')
 def get_proveedores():
-    rol = session.get('rol', 'sistemas')
-    if rol == 'contabilidad':
-        table = 'proveedores_conta'
-    elif rol == 'marketing':
-        table = 'proveedores_mkt'
-    else:
-        table = 'proveedores'
+    table = tabla_proveedores_por_rol(session.get('rol'))
+    if not table:
+        return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
     conn = get_db_connection()
     proveedores = conn.execute(f'SELECT * FROM {table} ORDER BY nombre ASC').fetchall()
     conn.close()
@@ -990,13 +1052,9 @@ def get_proveedores():
 
 @app.route('/guardar_proveedor', methods=['POST'])
 def guardar_proveedor():
-    rol = session.get('rol', 'sistemas')
-    if rol == 'contabilidad':
-        table = 'proveedores_conta'
-    elif rol == 'marketing':
-        table = 'proveedores_mkt'
-    else:
-        table = 'proveedores'
+    table = tabla_proveedores_por_rol(session.get('rol'))
+    if not table:
+        return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
     data = request.json
     try:
         with get_db_connection() as conn:
