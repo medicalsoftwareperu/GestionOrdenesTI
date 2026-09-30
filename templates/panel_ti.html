@@ -11,47 +11,59 @@
         <div class="ti-brand">
             <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical" class="ti-logo">
             <span class="ti-brand-divider" aria-hidden="true"></span>
-            <span class="ti-brand-label">Sistemas</span>
+            <div class="ti-brand-label"><strong>Tecnología de la Información</strong><span>Portal interno de gestión</span></div>
         </div>
         <div class="ti-session">
-            <span class="ti-account"><span class="ti-status-dot" aria-hidden="true"></span>{{ session['usuario'] }}</span>
+            <span class="ti-account"><span class="ti-avatar" aria-hidden="true">TI</span>{{ session['usuario'] }}</span>
             <button id="btn-theme-toggle" class="ti-theme" onclick="toggleGlobalTheme()" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
             <a href="/logout" class="ti-logout">Cerrar Sesión <span aria-hidden="true">↗</span></a>
         </div>
     </header>
     <main class="ti-main">
-        <div class="ti-intro">
-            <p class="ti-eyebrow">PANEL PRINCIPAL</p>
-            <h1>Gestión de Órdenes TI<span class="ti-title-dot">.</span></h1>
-            <p class="ti-subtitle">Compras, bajas y documentos. Todo en un solo lugar.</p>
-        </div>
-        <div class="ti-section-label"><span>Accesos rápidos</span><span class="ti-section-line" aria-hidden="true"></span><span class="ti-section-count">04</span></div>
+        <section class="ti-hero" aria-labelledby="ti-title">
+            <div class="ti-intro">
+                <p class="ti-eyebrow"><span aria-hidden="true"></span> GRUPO MEDICAL · SISTEMAS</p>
+                <h1 id="ti-title">Gestión de órdenes<span>para el área de TI.</span></h1>
+                <p class="ti-subtitle">Administra las compras y bajas de equipos.<br>Consulta tus documentos y el registro de actividad.</p>
+                <div class="ti-topics"><span>Equipos</span><span>Documentos</span><span>Trazabilidad</span></div>
+            </div>
+            <div class="ti-illustration" aria-hidden="true">
+                <svg viewBox="0 0 440 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs><pattern id="ti-grid" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="currentColor" opacity=".17"/></pattern></defs>
+                    <rect width="440" height="280" fill="url(#ti-grid)"/>
+                    <g stroke="currentColor" stroke-width="1" opacity=".18"><path d="m220 23 105 61v122l-105 61-105-61V84Z"/><path d="m220 53 79 46v92l-79 46-79-46V99Z"/></g>
+                    <g stroke="currentColor" stroke-width="1.5" opacity=".45"><path d="M178 140H90V76M262 140h91v67M220 100V64h121M220 180v56H98"/><circle cx="90" cy="76" r="4"/><circle cx="353" cy="207" r="4"/><circle cx="341" cy="64" r="4"/><circle cx="98" cy="236" r="4"/></g>
+                    <path class="ti-hex" d="m220 86 47 27v54l-47 27-47-27v-54Z" stroke-width="1.5"/>
+                    <g class="ti-server" stroke-width="1.7"><rect x="198" y="115" width="44" height="21" rx="4"/><rect x="198" y="144" width="44" height="21" rx="4"/><path d="M207 125h13M207 154h13"/><circle cx="232" cy="125" r="1.5"/><circle cx="232" cy="154" r="1.5"/></g>
+                    <g class="ti-device" stroke-width="1.5"><rect x="62" y="36" width="56" height="36" rx="5"/><path d="M80 81h20M90 72v9M71 63h38"/><rect x="324" y="207" width="58" height="38" rx="5"/><path d="M341 254h24M353 245v9M334 236h38"/><path d="m339 48-12-7V27l12-7 12 7v14Z"/><path d="m333 33 5 5 8-10"/><rect x="75" y="204" width="32" height="24" rx="4"/><path d="M82 212h18M82 219h11"/></g>
+                </svg>
+            </div>
+        </section>
+        <div class="ti-section-heading"><h2>¿Qué necesitas gestionar?</h2><span>Accesos del área</span></div>
         <div class="ti-grid">
             <a href="/compras" class="ti-card ti-card-primary">
-                <div class="ti-card-top"><span class="ti-icon">{{ icono('compras') }}</span><span class="ti-card-number">01</span></div>
+                <div class="ti-card-top"><span class="ti-icon">{{ icono('compras') }}</span><span class="ti-card-category">ADQUISICIONES</span></div>
                 <h2>Orden de Compra</h2>
-                <p>Solicitudes para equipos, repuestos y suministros.</p>
-                <span class="ti-card-action">Crear Orden <span aria-hidden="true">→</span></span>
+                <p>Solicita equipos, repuestos y suministros para la operación.</p>
+                <span class="ti-card-action">Crear Orden <span aria-hidden="true">↗</span></span>
             </a>
             <a href="/bajas" class="ti-card">
-                <div class="ti-card-top"><span class="ti-icon">{{ icono('bajas') }}</span><span class="ti-card-number">02</span></div>
+                <div class="ti-card-top"><span class="ti-icon">{{ icono('bajas') }}</span><span class="ti-card-category">EQUIPOS</span></div>
                 <h2>Guía de Baja</h2>
-                <p>Registro de salida o desecho de equipos de cómputo.</p>
-                <span class="ti-card-action">Crear Guía <span aria-hidden="true">→</span></span>
+                <p>Registra la salida de equipos por fallas u obsolescencia.</p>
+                <span class="ti-card-action">Crear Guía <span aria-hidden="true">↗</span></span>
             </a>
-            <a href="/historial" class="ti-card">
-                <div class="ti-card-top"><span class="ti-icon">{{ icono('historial') }}</span><span class="ti-card-number">03</span></div>
-                <h2>Historial</h2>
-                <p>Consulta y descarga los documentos generados.</p>
-                <span class="ti-card-action">Ver Archivos <span aria-hidden="true">→</span></span>
+            <a href="/historial" class="ti-card ti-card-compact">
+                <span class="ti-icon">{{ icono('historial') }}</span>
+                <div class="ti-compact-copy"><h2>Historial</h2><p>Consulta y descarga tus documentos.</p><span class="ti-compact-action">Ver Archivos</span></div>
+                <span class="ti-compact-arrow" aria-hidden="true">→</span>
             </a>
-            <a href="{{ url_for('auditoria') }}" class="ti-card">
-                <div class="ti-card-top"><span class="ti-icon">{{ icono('auditoria') }}</span><span class="ti-card-number">04</span></div>
-                <h2>Auditoría</h2>
-                <p>Revisa las acciones registradas por cuenta y área.</p>
-                <span class="ti-card-action">Ver Auditoría <span aria-hidden="true">→</span></span>
+            <a href="{{ url_for('auditoria') }}" class="ti-card ti-card-compact">
+                <span class="ti-icon">{{ icono('auditoria') }}</span>
+                <div class="ti-compact-copy"><h2>Auditoría</h2><p>Actividad registrada por cuenta y área.</p><span class="ti-compact-action">Ver Auditoría</span></div>
+                <span class="ti-compact-arrow" aria-hidden="true">→</span>
             </a>
         </div>
-        <footer class="ti-footer"><span>Medical</span><span>Gestión interna · Sistemas</span></footer>
+        <footer class="ti-footer"><span>Grupo Medical</span><span>Tecnología de la Información · Gestión interna</span></footer>
     </main>
 </div>

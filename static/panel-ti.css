@@ -1,71 +1,8 @@
-.ti-panel {
-    --ti-bg: #f7f7f5;
-    --ti-surface: #fff;
-    --ti-text: #23262b;
-    --ti-muted: #626971;
-    --ti-border: #e3e4e1;
-    --ti-accent: #8e3347;
-    --ti-accent-bg: #f6eaee;
-    --ti-hover: #d0b0b8;
-    background: var(--ti-bg);
-    color: var(--ti-text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    -webkit-font-smoothing: antialiased;
-}
-[data-bs-theme="dark"] .ti-panel {
-    --ti-bg: #17191c;
-    --ti-surface: #202327;
-    --ti-text: #f1f0ed;
-    --ti-muted: #a3a8af;
-    --ti-border: #34383d;
-    --ti-accent: #e7a2b1;
-    --ti-accent-bg: #362830;
-    --ti-hover: #85616b;
-}
-.ti-shell { max-width: 1180px; margin: 0 auto; padding: 0 40px; }
-.ti-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 108px; border-bottom: 1px solid var(--ti-border); }
-.ti-brand, .ti-session { display: flex; align-items: center; gap: 22px; }
-.ti-logo { width: 116px; height: 42px; object-fit: contain; background: #fff; border-radius: 3px; }
-.ti-brand-divider { height: 24px; width: 1px; background: var(--ti-border); }
-.ti-brand-label { font-size: 14px; color: var(--ti-muted); }
-.ti-account { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
-.ti-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #50816b; }
-.ti-theme { width: 36px !important; height: 36px !important; padding: 0 !important; display: inline-flex !important; align-items: center; justify-content: center; border: 1px solid var(--ti-border) !important; background: var(--ti-surface) !important; color: var(--ti-text) !important; border-radius: 9px !important; box-shadow: none !important; font-size: 15px; }
-.ti-panel #btn-theme-toggle { width: 36px; height: 36px; padding: 0; border: 1px solid var(--ti-border); background: var(--ti-surface); color: var(--ti-text); border-radius: 9px; box-shadow: none !important; }
-.ti-logout { color: var(--ti-muted); font-size: 13px; text-decoration: none; }
-.ti-logout span { margin-left: 7px; }
-.ti-logout:hover { color: var(--ti-accent); }
-.ti-main { max-width: 980px; margin: 0 auto; padding: 58px 0 28px; }
-.ti-eyebrow { margin: 0 0 13px; font-size: 11px; font-weight: 600; letter-spacing: .16em; color: var(--ti-accent); }
-.ti-intro h1 { margin: 0; font-size: clamp(28px, 3.5vw, 40px); font-weight: 600; line-height: 1.2; letter-spacing: -.035em; }
-.ti-title-dot { color: var(--ti-accent); }
-.ti-subtitle { color: var(--ti-muted); font-size: 15px; line-height: 1.6; margin: 15px 0 0; }
-.ti-section-label { display: flex; align-items: center; gap: 16px; margin: 39px 0 18px; color: var(--ti-muted); font-size: 12px; }
-.ti-section-line { flex: 1; height: 1px; background: var(--ti-border); }
-.ti-section-count { font-size: 11px; font-variant-numeric: tabular-nums; }
-.ti-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-.ti-card { display: flex; flex-direction: column; min-height: 232px; padding: 26px 28px; border: 1px solid var(--ti-border); border-radius: 14px; background: var(--ti-surface); color: var(--ti-text); text-decoration: none; transition: border-color .18s, box-shadow .18s, transform .18s; }
-.ti-card:hover { color: var(--ti-text); border-color: var(--ti-hover); box-shadow: 0 6px 20px rgb(0 0 0 / 4%); transform: translateY(-2px); }
-.ti-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 21px; }
-.ti-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 9px; background: var(--ti-bg); color: var(--ti-muted); }
-.ti-icon svg { width: 22px; height: 22px; }
-.ti-card-primary .ti-icon { color: var(--ti-accent); background: var(--ti-accent-bg); }
-.ti-card-number { color: var(--ti-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-.ti-card h2 { font-size: 20px; font-weight: 600; letter-spacing: -.025em; margin: 0 0 9px; }
-.ti-card p { font-size: 14px; line-height: 1.6; color: var(--ti-muted); margin: 0 0 24px; }
-.ti-card-action { display: flex; justify-content: space-between; align-items: center; margin-top: auto; color: var(--ti-accent); font-size: 13px; font-weight: 600; }
-.ti-card-action span { font-size: 20px; font-weight: 400; }
-.ti-footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 29px; padding-top: 18px; border-top: 1px solid var(--ti-border); font-size: 11px; color: var(--ti-muted); }
-.ti-panel a:focus-visible, .ti-panel button:focus-visible { outline: 2px solid var(--ti-accent); outline-offset: 5px; }
-@media (max-width: 640px) {
-    .ti-shell { padding: 0 20px; }
-    .ti-header { min-height: 90px; gap: 16px; flex-wrap: wrap; padding: 20px 0; }
-    .ti-brand, .ti-session { gap: 14px; }
-    .ti-brand-divider, .ti-brand-label { display: none; }
-    .ti-logo { width: 94px; height: 36px; }
-    .ti-main { padding-top: 36px; }
-    .ti-grid { grid-template-columns: 1fr; gap: 14px; }
-    .ti-card { min-height: 220px; padding: 24px; }
-    .ti-section-label { margin-top: 30px; }
-}
-@media (prefers-reduced-motion: reduce) { .ti-card { transition: none; } .ti-card:hover { transform: none; } }
+.ti-panel{--ti-bg:#f5f6f8;--ti-surface:#fff;--ti-text:#26313e;--ti-muted:#637080;--ti-border:#e0e4ea;--ti-accent:#9d3046;--ti-soft:#f7ecef;--ti-tech:#728493;background:var(--ti-bg);color:var(--ti-text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+[data-bs-theme="dark"] .ti-panel{--ti-bg:#171c23;--ti-surface:#202731;--ti-text:#edf0f4;--ti-muted:#a6b1bf;--ti-border:#35404d;--ti-accent:#eea4b4;--ti-soft:#382a34;--ti-tech:#9cabbc}
+.ti-shell{max-width:1200px;margin:auto;padding:0 36px}.ti-header{min-height:100px;display:flex;align-items:center;justify-content:space-between;gap:24px;border-bottom:1px solid var(--ti-border)}.ti-brand,.ti-session{display:flex;align-items:center;gap:20px}.ti-logo{width:126px;height:46px;object-fit:contain;background:#fff;border-radius:3px}.ti-brand-divider{height:32px;width:1px;background:var(--ti-border)}.ti-brand-label{display:flex;flex-direction:column;gap:4px}.ti-brand-label strong{font-size:13px;font-weight:600}.ti-brand-label span{font-size:11px;color:var(--ti-muted)}.ti-account{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600}.ti-avatar{display:grid;place-items:center;width:29px;height:29px;border-radius:8px;background:var(--ti-soft);color:var(--ti-accent);font-size:10px;letter-spacing:.05em}.ti-panel #btn-theme-toggle{width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--ti-border);border-radius:8px;background:var(--ti-surface);box-shadow:none!important}.ti-logout{font-size:12px;color:var(--ti-muted);text-decoration:none}.ti-logout span{margin-left:7px}.ti-logout:hover{color:var(--ti-accent)}
+.ti-main{padding:32px 0 24px}.ti-hero{display:grid;grid-template-columns:1.25fr 1fr;align-items:center;min-height:280px;border:1px solid var(--ti-border);border-radius:16px;background:var(--ti-surface);overflow:hidden;position:relative}.ti-hero:before{content:"";position:absolute;top:38px;bottom:38px;left:0;width:3px;background:var(--ti-accent);border-radius:0 3px 3px 0}.ti-intro{padding:34px 38px;z-index:1}.ti-eyebrow{display:flex;align-items:center;gap:8px;color:var(--ti-accent);font-size:10px;letter-spacing:.12em;font-weight:600;margin:0 0 16px}.ti-eyebrow>span{width:6px;height:6px;border:1px solid var(--ti-accent);transform:rotate(45deg)}.ti-intro h1{font-size:34px;line-height:1.18;letter-spacing:-.035em;font-weight:600;margin:0}.ti-intro h1>span{display:block;color:var(--ti-muted);font-weight:400}.ti-subtitle{font-size:13px;line-height:1.7;color:var(--ti-muted);margin:17px 0 21px}.ti-topics{display:flex;flex-wrap:wrap;gap:9px}.ti-topics span{font-size:10px;color:var(--ti-muted);border:1px solid var(--ti-border);border-radius:5px;padding:4px 8px}.ti-illustration{color:var(--ti-tech);padding:16px 30px 16px 0;background:radial-gradient(ellipse at center,var(--ti-soft),transparent 70%)}.ti-illustration svg{width:100%;max-height:260px}.ti-hex{stroke:var(--ti-accent);fill:var(--ti-surface)}.ti-server{stroke:var(--ti-accent)}.ti-device{stroke:var(--ti-tech);fill:var(--ti-surface)}
+.ti-section-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:30px 0 16px}.ti-section-heading h2{font-size:15px;font-weight:600;margin:0;letter-spacing:-.02em}.ti-section-heading>span{font-size:11px;color:var(--ti-muted)}.ti-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.ti-card{display:flex;flex-direction:column;padding:25px 28px;border:1px solid var(--ti-border);border-radius:12px;background:var(--ti-surface);color:var(--ti-text);text-decoration:none;transition:transform .18s,border-color .18s,box-shadow .18s}.ti-card:hover{color:var(--ti-text);border-color:var(--ti-accent);transform:translateY(-2px);box-shadow:0 5px 18px rgb(24 37 51 / 5%)}.ti-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.ti-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:10px;background:var(--ti-bg);color:var(--ti-tech);flex-shrink:0}.ti-icon svg{width:22px;height:22px}.ti-card-primary .ti-icon{background:var(--ti-soft);color:var(--ti-accent)}.ti-card-category{font-size:9px;letter-spacing:.13em;color:var(--ti-muted)}.ti-card h2{font-size:21px;font-weight:600;letter-spacing:-.03em;margin:0 0 8px}.ti-card p{font-size:13px;line-height:1.6;color:var(--ti-muted);margin:0 0 21px}.ti-card-action{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding:11px 14px;border:1px solid var(--ti-border);border-radius:7px;font-size:12px;font-weight:600;color:var(--ti-text)}.ti-card-primary .ti-card-action{background:#963148;border-color:#963148;color:#fff}.ti-card-action>span{font-size:16px;font-weight:400}.ti-card-compact{flex-direction:row;align-items:center;gap:18px;padding:23px 28px}.ti-card-compact h2{font-size:17px;margin-bottom:5px}.ti-card-compact p{font-size:12px;margin:0 0 8px}.ti-compact-copy{flex:1}.ti-compact-action{font-size:11px;color:var(--ti-accent);font-weight:600}.ti-compact-arrow{font-size:20px;color:var(--ti-muted)}.ti-footer{display:flex;justify-content:space-between;gap:15px;padding-top:18px;margin-top:25px;border-top:1px solid var(--ti-border);font-size:10px;color:var(--ti-muted)}.ti-panel a:focus-visible,.ti-panel button:focus-visible{outline:2px solid var(--ti-accent);outline-offset:5px}
+@media(max-width:850px){.ti-brand-label{display:none}.ti-intro{padding:30px}.ti-intro h1{font-size:29px}.ti-illustration{padding-right:10px}}
+@media(max-width:600px){.ti-shell{padding:0 18px}.ti-header{min-height:86px;flex-wrap:wrap;padding:18px 0;gap:14px}.ti-brand-divider{display:none}.ti-logo{width:100px;height:38px}.ti-brand,.ti-session{gap:12px}.ti-session{flex-wrap:wrap}.ti-logout{font-size:11px}.ti-main{padding-top:20px}.ti-hero{grid-template-columns:1fr}.ti-intro{padding:27px}.ti-intro h1{font-size:28px}.ti-illustration{display:none}.ti-grid{grid-template-columns:1fr;gap:12px}.ti-card{padding:23px}.ti-card-compact{gap:14px}.ti-section-heading>span{display:none}.ti-footer{flex-wrap:wrap;line-height:1.6}}
+@media(prefers-reduced-motion:reduce){.ti-card{transition:none}.ti-card:hover{transform:none}}
