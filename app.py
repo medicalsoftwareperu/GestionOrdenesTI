@@ -4,6 +4,13 @@ import sqlite3
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session
 from datetime import datetime
 import json
+import hashlib
+import shutil
+import tempfile
+import time
+import uuid
+from contextlib import contextmanager
+from functools import wraps
 
 # Intentar cargar variables de entorno desde un archivo .env local de forma manual (sin dependencias de pip)
 ruta_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
@@ -22,17 +29,17 @@ if os.path.exists(ruta_env):
 app = Flask(__name__)
 
 # Configurar la clave secreta desde variables de entorno
-app.secret_key = os.getenv('FLASK_SECRET_KEY', 'gestion_ordenes_ti_secret_key')
+app.secret_key = os.getenv('FLASK_SECRET_KEY') or os.urandom(32)
 
 # Credenciales de inicio de sesión leídas de forma segura desde variables de entorno
 TI_USER = os.getenv('TI_USERNAME', 'admin')
-TI_PASS = os.getenv('TI_PASSWORD', 'sistemas')
+TI_PASS = os.getenv('TI_PASSWORD')
 CONTA_USER = os.getenv('CONTA_USERNAME', 'conta')
-CONTA_PASS = os.getenv('CONTA_PASSWORD', 'conta123')
+CONTA_PASS = os.getenv('CONTA_PASSWORD')
 MKT_USER = os.getenv('MARKETING_USERNAME', 'marketing')
-MKT_PASS = os.getenv('MARKETING_PASSWORD', 'marketing2026')
+MKT_PASS = os.getenv('MARKETING_PASSWORD')
 MANT_USER = os.getenv('MANT_USERNAME', 'mantenimiento')
-MANT_PASS = os.getenv('MANT_PASSWORD', 'mantenimiento2026')
+MANT_PASS = os.getenv('MANT_PASSWORD')
 
 USER_CREDENTIALS = {
     TI_USER: TI_PASS,
@@ -80,7 +87,7 @@ os.makedirs(CARPETA_FACTURAS, exist_ok=True)
 DB_PATH = os.path.join(BASE_DIR, 'database.db')
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -181,6 +188,27 @@ with get_db_connection() as conn:
         if cursor.fetchone()[0] == 0:
             conn.execute('INSERT INTO contadores (tipo, valor) VALUES (?, ?)', (tipo_contador, 1))
     
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS reservas_documentos (
+            token TEXT PRIMARY KEY,
+            nombre TEXT UNIQUE NOT NULL,
+            tipo TEXT NOT NULL,
+            empresa TEXT NOT NULL DEFAULT '',
+            numero INTEGER NOT NULL,
+            usuario TEXT NOT NULL,
+            estado TEXT NOT NULL DEFAULT 'pendiente',
+            huella TEXT,
+            creado TEXT NOT NULL,
+            UNIQUE(tipo, empresa, numero)
+        )
+    ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS guardados_pendientes (
+            id TEXT PRIMARY KEY,
+            plan TEXT NOT NULL
+        )
+    ''')
+
     # Agregar columnas dinámicamente si no existen
     for query in [
         'ALTER TABLE proveedores ADD COLUMN banco TEXT DEFAULT "BCP"',
@@ -201,86 +229,23 @@ with get_db_connection() as conn:
 
 
 def sincronizar_contadores_con_disco():
-    # Sincronizar compras
-    if os.path.exists(CARPETA_COMPRAS):
-        max_val = 0
-        for f in os.listdir(CARPETA_COMPRAS):
-            if f.startswith('OC_') and f.endswith('.pdf'):
-                match = re.search(r'-(\d+)\.pdf$', f)
-                if match:
-                    val = int(match.group(1))
-                    if val > max_val:
-                        max_val = val
-        if max_val > 0:
-            with get_db_connection() as conn_db:
-                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('compras', max_val + 1))
-                conn_db.commit()
-
-    # Sincronizar bajas
-    if os.path.exists(CARPETA_BAJAS):
-        max_val = 0
-        for f in os.listdir(CARPETA_BAJAS):
-            if f.startswith('BAJA_') and f.endswith('.pdf'):
-                match = re.search(r'-(\d+)\.pdf$', f)
-                if match:
-                    val = int(match.group(1))
-                    if val > max_val:
-                        max_val = val
-        if max_val > 0:
-            with get_db_connection() as conn_db:
-                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('bajas', max_val + 1))
-                conn_db.commit()
-
-    # Sincronizar pagos
-    if os.path.exists(CARPETA_PAGOS):
-        max_val = 0
-        for f in os.listdir(CARPETA_PAGOS):
-            if f.startswith('OP_') and f.endswith('.pdf'):
-                match = re.search(r'-(\d+)\.pdf$', f)
-                if match:
-                    val = int(match.group(1))
-                    if val > max_val:
-                        max_val = val
-        if max_val > 0:
-            with get_db_connection() as conn_db:
-                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('pagos', max_val + 1))
-                conn_db.commit()
-
-    # Sincronizar servicios
-    if os.path.exists(CARPETA_SERVICIOS):
-        max_val = 0
-        for f in os.listdir(CARPETA_SERVICIOS):
-            if f.startswith('OS_') and f.endswith('.pdf'):
-                match = re.search(r'-(\d+)\.pdf$', f)
-                if match:
-                    val = int(match.group(1))
-                    if val > max_val:
-                        max_val = val
-        if max_val > 0:
-            with get_db_connection() as conn_db:
-                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('servicios', max_val + 1))
-                conn_db.commit()
-
-    # Sincronizar mantenimiento
-    if os.path.exists(CARPETA_MANTENIMIENTO):
-        max_val = 0
-        for f in os.listdir(CARPETA_MANTENIMIENTO):
-            if f.startswith('OCM_') and f.endswith('.pdf'):
-                match = re.search(r'-(\d+)\.pdf$', f)
-                if match:
-                    val = int(match.group(1))
-                    if val > max_val:
-                        max_val = val
-        if max_val > 0:
-            with get_db_connection() as conn_db:
-                conn_db.execute('INSERT OR REPLACE INTO contadores (tipo, valor) VALUES (?, ?)', ('mantenimiento', max_val + 1))
-                conn_db.commit()
-
-# Ejecutar sincronización al inicio
-try:
-    sincronizar_contadores_con_disco()
-except Exception as sync_err:
-    print("Error sincronizando contadores al inicio:", sync_err)
+    with bloqueo_documentos():
+        recuperar_guardados_pendientes()
+        carpetas = {'compras': CARPETA_COMPRAS, 'bajas': CARPETA_BAJAS,
+                    'pagos': CARPETA_PAGOS, 'servicios': CARPETA_SERVICIOS,
+                    'mantenimiento': CARPETA_MANTENIMIENTO}
+        conn = get_db_connection()
+        try:
+            for tipo, carpeta in carpetas.items():
+                numeros = [int(match.group(1)) for nombre in os.listdir(carpeta)
+                           if (match := re.search(r'-([0-9]+)\.pdf$', nombre))]
+                siguiente = max(numeros, default=0) + 1
+                conn.execute('INSERT INTO contadores (tipo, valor) VALUES (?, ?) '
+                             'ON CONFLICT(tipo) DO UPDATE SET valor = MAX(valor, excluded.valor)',
+                             (tipo, siguiente))
+            conn.commit()
+        finally:
+            conn.close()
 
 # --- LÓGICA DE CONTADORES ---
 def obtener_siguiente_numero(tipo):
@@ -297,18 +262,15 @@ def obtener_siguiente_numero(tipo):
     return 1
 
 def incrementar_numero(tipo):
-    with get_db_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT valor FROM contadores WHERE tipo = ?', (tipo,))
-        row = cursor.fetchone()
-        if row:
-            nuevo = row[0] + 1
-            conn.execute('UPDATE contadores SET valor = ? WHERE tipo = ?', (nuevo, tipo))
-        else:
-            nuevo = 2
-            conn.execute('INSERT INTO contadores (tipo, valor) VALUES (?, ?)', (tipo, nuevo))
+    conn = get_db_connection()
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        conn.execute('UPDATE contadores SET valor = valor + 1 WHERE tipo = ?', (tipo,))
+        row = conn.execute('SELECT valor FROM contadores WHERE tipo = ?', (tipo,)).fetchone()
         conn.commit()
-        return nuevo
+        return row['valor'] if row else 2
+    finally:
+        conn.close()
 
 
 # --- VALIDACIÓN Y PERMISOS DE DOCUMENTOS ---
@@ -366,6 +328,104 @@ def ruta_metadatos_documento(tipo, nombre):
     if os.path.isfile(ruta_editada):
         return ruta_editada
     return ruta_documento_segura(configuracion[1], json_nombre)
+
+
+# --- GUARDADO CONSISTENTE ---
+@contextmanager
+def bloqueo_documentos():
+    # El mismo bloqueo funciona entre hilos y procesos, incluido IIS/Windows.
+    archivo = open(os.path.join(CARPETA_HISTORIAL, '.documentos.lock'), 'a+b')
+    adquirido = False
+    try:
+        archivo.seek(0, os.SEEK_END)
+        if archivo.tell() == 0:
+            archivo.write(b'\0')
+            archivo.flush()
+        limite = time.monotonic() + 30
+        while not adquirido:
+            try:
+                if os.name == 'nt':
+                    import msvcrt
+                    archivo.seek(0)
+                    msvcrt.locking(archivo.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(archivo.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                adquirido = True
+            except OSError:
+                if time.monotonic() >= limite:
+                    raise TimeoutError('Hay otro documento guardándose. Intenta nuevamente.')
+                time.sleep(0.05)
+        yield
+    finally:
+        if adquirido:
+            if os.name == 'nt':
+                import msvcrt
+                archivo.seek(0)
+                msvcrt.locking(archivo.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(archivo.fileno(), fcntl.LOCK_UN)
+        archivo.close()
+
+
+def documentos_bloqueados(funcion):
+    @wraps(funcion)
+    def protegida(*args, **kwargs):
+        try:
+            with bloqueo_documentos():
+                recuperar_guardados_pendientes()
+                return funcion(*args, **kwargs)
+        except TimeoutError as error:
+            return jsonify({'success': False, 'message': str(error)}), 503
+    return protegida
+
+
+def restaurar_plan_guardado(plan):
+    for archivo in plan['archivos']:
+        if archivo['respaldo']:
+            # Si ya se restauró antes de una interrupción, el respaldo no estará.
+            if os.path.exists(archivo['respaldo']):
+                os.replace(archivo['respaldo'], archivo['destino'])
+        elif os.path.exists(archivo['destino']):
+            os.remove(archivo['destino'])
+
+
+def recuperar_guardados_pendientes():
+    conn = get_db_connection()
+    try:
+        for row in conn.execute('SELECT id, plan FROM guardados_pendientes').fetchall():
+            plan = json.loads(row['plan'])
+            restaurar_plan_guardado(plan)
+            conn.execute('DELETE FROM guardados_pendientes WHERE id = ?', (row['id'],))
+            conn.commit()
+            shutil.rmtree(plan['temporal'], ignore_errors=True)
+    finally:
+        conn.close()
+
+
+# Recuperar una operación interrumpida por un reinicio antes de atender usuarios.
+with bloqueo_documentos():
+    recuperar_guardados_pendientes()
+
+# Ejecutar sincronización al inicio
+try:
+    sincronizar_contadores_con_disco()
+except Exception as sync_err:
+    print("Error sincronizando contadores al inicio:", sync_err)
+
+
+
+def persistir_datos_documento(conn, tipo, nombre, metadata, texto_busqueda):
+    conn.execute('DELETE FROM items_pdf WHERE nombre_archivo = ?', (nombre,))
+    if texto_busqueda.strip():
+        conn.execute('INSERT INTO items_pdf (nombre_archivo, contenido) VALUES (?, ?)',
+                     (nombre, texto_busqueda))
+    if tipo != 'bajas' and (metadata.get('razon_social') or '').strip():
+        conn.execute('INSERT INTO mis_empresas (razon_social, ruc, direccion) VALUES (?, ?, ?) '
+                     'ON CONFLICT(razon_social) DO UPDATE SET ruc = excluded.ruc, direccion = excluded.direccion',
+                     (metadata['razon_social'].strip(), (metadata.get('ruc') or '').strip(),
+                      (metadata.get('direccion') or '').strip()))
 
 
 # --- RUTAS PRINCIPALES ---
@@ -519,6 +579,7 @@ def pagos():
     return render_template('orden_de_pago.html', numero_op='', edit_mode=False, edit_filename='')
 
 @app.route('/historial')
+@documentos_bloqueados
 def historial():
     rol = session.get('rol', 'sistemas')
     archivos_compras = []
@@ -577,6 +638,7 @@ def historial():
 
 # --- RUTAS DE ARCHIVOS (PDF) ---
 @app.route('/ver_pdf/<tipo>/<nombre>')
+@documentos_bloqueados
 def ver_pdf(tipo, nombre):
     configuracion = configuracion_documento(tipo)
     if not configuracion or session.get('rol') != configuracion[0]:
@@ -592,6 +654,7 @@ def ver_pdf(tipo, nombre):
     return "Archivo no encontrado", 404
 
 @app.route('/ver_factura/<nombre>')
+@documentos_bloqueados
 def ver_factura(nombre):
     rol = session.get('rol')
     if rol not in ['sistemas', 'contabilidad']:
@@ -606,6 +669,7 @@ def ver_factura(nombre):
     return send_from_directory(CARPETA_FACTURAS, nombre, as_attachment=False)
 
 @app.route('/subir_factura', methods=['POST'])
+@documentos_bloqueados
 def subir_factura():
     rol = session.get('rol', 'sistemas')
     if rol != 'sistemas':
@@ -649,6 +713,7 @@ def get_lista_compras():
 
 
 @app.route('/vincular_oc', methods=['POST'])
+@documentos_bloqueados
 def vincular_oc():
     rol = session.get('rol', 'sistemas')
     if rol != 'contabilidad':
@@ -694,6 +759,7 @@ def vincular_oc():
         return jsonify({'success': False, 'message': f'Error al actualizar vínculo: {str(e)}'}), 500
 
 @app.route('/get_metadata/<tipo>/<nombre>')
+@documentos_bloqueados
 def get_metadata(tipo, nombre):
     configuracion = configuracion_documento(tipo)
     if not configuracion or session.get('rol') != configuracion[0]:
@@ -714,92 +780,190 @@ def get_metadata(tipo, nombre):
     else:
         return jsonify({'success': False, 'message': 'No se encontraron metadatos para este archivo'}), 404
 
+@app.route('/reservar_documento', methods=['POST'])
+@documentos_bloqueados
+def reservar_documento():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'success': False, 'message': 'Datos no válidos'}), 400
+    tipo = data.get('tipo')
+    if not isinstance(tipo, str):
+        return jsonify({'success': False, 'message': 'Tipo no válido'}), 400
+    configuracion = configuracion_documento(tipo)
+    if not configuracion or session.get('rol') != configuracion[0]:
+        return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
+    nombre = data.get('nombre', '')
+    empresa = data.get('empresa', '')
+    if not isinstance(empresa, str):
+        return jsonify({'success': False, 'message': 'Empresa no válida'}), 400
+    try:
+        validar_nombre_documento(tipo, nombre)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Nombre no válido'}), 400
+    recuperar_guardados_pendientes()
+    conn = get_db_connection()
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        grupo = normalizar_nombre_empresa(empresa) if tipo == 'pagos' else ''
+        if tipo == 'pagos':
+            siguiente = obtener_siguiente_voucher_por_empresa(empresa)
+        else:
+            numeros = [int(match.group(1)) for f in os.listdir(configuracion[1])
+                       if (match := re.search(r'-([0-9]+)\.pdf$', f))]
+            row = conn.execute('SELECT valor FROM contadores WHERE tipo = ?', (tipo,)).fetchone()
+            siguiente = max(max(numeros, default=0) + 1, row['valor'] if row else 1)
+        reservado = conn.execute('SELECT MAX(numero) FROM reservas_documentos WHERE tipo = ? AND empresa = ?',
+                                 (tipo, grupo)).fetchone()[0]
+        siguiente = max(siguiente, (reservado or 0) + 1)
+        prefijo_fecha = nombre.rsplit('-', 1)[0]
+        while True:
+            asignado = f'{prefijo_fecha}-{siguiente:04d}.pdf'
+            validar_nombre_documento(tipo, asignado)
+            if not documento_existe(tipo, asignado) and not conn.execute(
+                    'SELECT 1 FROM reservas_documentos WHERE nombre = ?', (asignado,)).fetchone():
+                break
+            siguiente += 1
+        token = uuid.uuid4().hex
+        conn.execute('INSERT INTO reservas_documentos (token, nombre, tipo, empresa, numero, usuario, creado) '
+                     'VALUES (?, ?, ?, ?, ?, ?, ?)',
+                     (token, asignado, tipo, grupo, siguiente, session['usuario'], datetime.now().isoformat()))
+        conn.commit()
+        numero = re.search(r'([0-9]+-[0-9]+)\.pdf$', asignado).group(1)
+        return jsonify({'success': True, 'nombre': asignado, 'numero': numero, 'reserva': token})
+    except Exception:
+        conn.rollback()
+        app.logger.exception('No se pudo reservar el documento')
+        return jsonify({'success': False, 'message': 'No se pudo reservar el número. Intenta nuevamente.'}), 500
+    finally:
+        conn.close()
+
+
 @app.route('/guardar_pdf', methods=['POST'])
+@documentos_bloqueados
 def guardar_pdf():
     if 'pdf' not in request.files:
-        return jsonify({'success': False, 'message': 'No se recibió ningún archivo'})
-
+        return jsonify({'success': False, 'message': 'No se recibió ningún archivo'}), 400
     archivo_pdf = request.files['pdf']
-    nombre_archivo = archivo_pdf.filename
+    nombre = archivo_pdf.filename
     edit_mode = request.form.get('edit_mode', 'false') == 'true'
-    metadata_json = request.form.get('metadata', '')
-
-    tipos_por_prefijo = {'OC_': 'compras', 'BAJA_': 'bajas', 'OP_': 'pagos', 'OS_': 'servicios', 'OCM_': 'mantenimiento'}
-    tipo = next((tipo for prefijo, tipo in tipos_por_prefijo.items()
-                 if isinstance(nombre_archivo, str) and nombre_archivo.startswith(prefijo)), None)
+    tipo = next((tipo for prefijo, tipo in {'OC_': 'compras', 'BAJA_': 'bajas', 'OP_': 'pagos',
+                'OS_': 'servicios', 'OCM_': 'mantenimiento'}.items()
+                if isinstance(nombre, str) and nombre.startswith(prefijo)), None)
     configuracion = configuracion_documento(tipo)
     if not configuracion:
         return jsonify({'success': False, 'message': 'Tipo o nombre de documento no válido'}), 400
     if session.get('rol') != configuracion[0]:
         return jsonify({'success': False, 'message': 'Acceso no autorizado para este tipo de documento'}), 403
     try:
-        validar_nombre_documento(tipo, nombre_archivo, permitir_historico=edit_mode)
-        if edit_mode and not documento_existe(tipo, nombre_archivo):
+        validar_nombre_documento(tipo, nombre, permitir_historico=edit_mode)
+        if edit_mode and not documento_existe(tipo, nombre):
             return jsonify({'success': False, 'message': 'Documento original no encontrado para editar'}), 404
         carpeta = configuracion[2] if edit_mode else configuracion[1]
-        ruta_guardado = ruta_documento_segura(carpeta, nombre_archivo)
-        ruta_json = ruta_documento_segura(carpeta, nombre_archivo[:-4] + '.json')
-    except ValueError:
-        return jsonify({'success': False, 'message': 'Nombre o ruta de documento no válido'}), 400
-    if not edit_mode:
-        incrementar_numero(tipo)
+        ruta_pdf = ruta_documento_segura(carpeta, nombre)
+        ruta_json = ruta_documento_segura(carpeta, nombre[:-4] + '.json')
+        metadata = json.loads(request.form.get('metadata', ''))
+        items = json.loads(request.form.get('items', '[]'))
+        if not isinstance(metadata, dict) or not isinstance(items, list) or any(not isinstance(i, dict) for i in items):
+            raise ValueError('Metadatos o ítems no válidos')
+        if 'items' in metadata and (not isinstance(metadata['items'], list) or
+                                    any(not isinstance(i, dict) for i in metadata['items'])):
+            raise ValueError('Ítems de edición no válidos')
+        for campo in ['razon_social', 'ruc', 'direccion']:
+            if metadata.get(campo) is not None and not isinstance(metadata.get(campo), str):
+                raise ValueError('Datos de empresa no válidos')
+        campos = ('detalle', 'comprobante') if tipo == 'pagos' else ('servicio',) if tipo == 'servicios' else ('desc', 'marca', 'modelo')
+        if any(i.get(campo) is not None and not isinstance(i.get(campo), str) for i in items for campo in campos):
+            raise ValueError('Términos de búsqueda no válidos')
+        texto_busqueda = ' '.join(' '.join(i.get(campo) or '' for campo in campos) for i in items).lower()
+        contenido_pdf = archivo_pdf.read()
+        if not contenido_pdf.startswith(b'%PDF-'):
+            raise ValueError('El archivo recibido no es un PDF válido')
+        token = request.form.get('reserva', '')
+        huella = hashlib.sha256(contenido_pdf + json.dumps(metadata, sort_keys=True, ensure_ascii=False).encode()
+                                + json.dumps(items, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': 'Documento o metadatos no válidos. No se guardaron cambios.'}), 400
 
-    # Evitar sobreescrituras accidentales al crear un nuevo documento
-    if not edit_mode and os.path.exists(ruta_guardado):
-        return jsonify({
-            'success': False, 
-            'message': f'Ya existe un documento con el nombre "{nombre_archivo}" en el historial. Por favor, usa otro número correlativo o edita el documento existente.'
-        })
-        
-    # Guardar PDF
-    archivo_pdf.save(ruta_guardado)
-
-    # Guardar JSON de Metadatos
-    if metadata_json:
-        try:
-            metadata_dict = json.loads(metadata_json)
-            with open(ruta_json, 'w', encoding='utf-8') as f:
-                json.dump(metadata_dict, f, ensure_ascii=False, indent=2)
-
-            # Guardar automáticamente la Razón Social del emisor si es una Orden de Compra, Pago o Servicio
-            if nombre_archivo.startswith('OC_') or nombre_archivo.startswith('OP_') or nombre_archivo.startswith('OS_') or nombre_archivo.startswith('OCM_'):
-                razon_social = metadata_dict.get('razon_social')
-                ruc = metadata_dict.get('ruc')
-                direccion = metadata_dict.get('direccion')
-                if razon_social and razon_social.strip():
-                    try:
-                        with get_db_connection() as conn:
-                            conn.execute('''
-                                INSERT OR REPLACE INTO mis_empresas (razon_social, ruc, direccion)
-                                VALUES (?, ?, ?)
-                            ''', (razon_social.strip(), (ruc or '').strip(), (direccion or '').strip()))
-                            conn.commit()
-                    except Exception as db_err:
-                        print("Error guardando mi empresa automáticamente:", db_err)
-        except Exception as e:
-            print("Error al guardar metadatos:", e)
-
-    # Guardar/Actualizar términos de búsqueda
-    items_json = request.form.get('items', '[]')
+    recuperar_guardados_pendientes()
+    conn = get_db_connection()
+    temporal = None
+    plan = None
+    registrado = False
+    terminado = False
+    restaurado = False
     try:
-        items = json.loads(items_json)
-        if nombre_archivo.startswith('OP_'):
-            texto_busqueda = " ".join([f"{i.get('detalle','')} {i.get('comprobante','')}" for i in items]).lower()
-        elif nombre_archivo.startswith('OS_'):
-            texto_busqueda = " ".join([f"{i.get('servicio','')}" for i in items]).lower()
-        else:
-            texto_busqueda = " ".join([f"{i.get('desc','')} {i.get('marca','')} {i.get('modelo','')}" for i in items]).lower()
-        
-        with get_db_connection() as conn:
-            if edit_mode:
-                conn.execute('DELETE FROM items_pdf WHERE nombre_archivo = ?', (nombre_archivo,))
-            if texto_busqueda.strip():
-                conn.execute('INSERT INTO items_pdf (nombre_archivo, contenido) VALUES (?, ?)', (nombre_archivo, texto_busqueda))
-            conn.commit()
-    except Exception as e:
-        print("Error procesando items:", e)
-
-    return jsonify({'success': True, 'message': 'Documento guardado exitosamente'})
+        conn.execute('BEGIN IMMEDIATE')
+        reserva = conn.execute('SELECT * FROM reservas_documentos WHERE token = ?', (token,)).fetchone() if token else None
+        if token and (not reserva or reserva['usuario'] != session['usuario'] or reserva['nombre'] != nombre or
+                      reserva['tipo'] != tipo or edit_mode or (tipo == 'pagos' and reserva['empresa'] !=
+                      normalizar_nombre_empresa(metadata.get('razon_social') or ''))):
+            return jsonify({'success': False, 'message': 'Reserva de documento no válida'}), 400
+        if reserva and reserva['estado'] == 'guardado':
+            if reserva['huella'] == huella:
+                return jsonify({'success': True, 'message': 'Documento guardado exitosamente', 'nombre': nombre})
+            return jsonify({'success': False, 'message': 'La reserva ya se utilizó para otro contenido'}), 409
+        if not edit_mode and (os.path.exists(ruta_pdf) or os.path.exists(ruta_json) or
+                (not token and conn.execute('SELECT 1 FROM reservas_documentos WHERE nombre = ?', (nombre,)).fetchone())):
+            return jsonify({'success': False, 'message': f'Ya existe o está reservado el documento "{nombre}". '
+                            'Recarga la página para crear otro documento o edita el existente.'}), 409
+        if edit_mode and tipo == 'pagos':
+            anterior = ruta_metadatos_documento(tipo, nombre)
+            if os.path.isfile(anterior):
+                with open(anterior, encoding='utf-8') as f:
+                    referencia = json.load(f).get('orden_compra_referencia')
+                if referencia:
+                    metadata['orden_compra_referencia'] = referencia
+        # Preparar ambos archivos antes de sustituir cualquier documento existente.
+        temporal = tempfile.mkdtemp(prefix='.guardado-', dir=CARPETA_HISTORIAL)
+        archivos = []
+        for destino, contenido in [(ruta_pdf, contenido_pdf), (ruta_json,
+                json.dumps(metadata, ensure_ascii=False, indent=2).encode('utf-8'))]:
+            preparado = os.path.join(temporal, os.path.basename(destino))
+            with open(preparado, 'wb') as f:
+                f.write(contenido)
+                f.flush()
+                os.fsync(f.fileno())
+            respaldo = preparado + '.anterior' if os.path.exists(destino) else None
+            if respaldo:
+                shutil.copy2(destino, respaldo)
+            archivos.append({'destino': destino, 'preparado': preparado, 'respaldo': respaldo})
+        plan = {'temporal': temporal, 'archivos': archivos}
+        operacion = uuid.uuid4().hex
+        # El diario persiste antes de publicar archivos; permite recuperar un reinicio abrupto.
+        conn.execute('INSERT INTO guardados_pendientes (id, plan) VALUES (?, ?)',
+                     (operacion, json.dumps(plan)))
+        conn.commit()
+        registrado = True
+        conn.execute('BEGIN IMMEDIATE')
+        for archivo in archivos:
+            os.replace(archivo['preparado'], archivo['destino'])
+        persistir_datos_documento(conn, tipo, nombre, metadata, texto_busqueda)
+        if not edit_mode:
+            siguiente = int(re.search(r'-([0-9]+)\.pdf$', nombre).group(1)) + 1
+            conn.execute('UPDATE contadores SET valor = MAX(valor, ?) WHERE tipo = ?', (siguiente, tipo))
+        if reserva:
+            conn.execute("UPDATE reservas_documentos SET estado = 'guardado', huella = ? WHERE token = ?", (huella, token))
+        conn.execute('DELETE FROM guardados_pendientes WHERE id = ?', (operacion,))
+        conn.commit()
+        terminado = True
+        return jsonify({'success': True, 'message': 'Documento guardado exitosamente', 'nombre': nombre})
+    except Exception:
+        conn.rollback()
+        app.logger.exception('Error al guardar el documento; recuperando la versión anterior')
+        try:
+            if registrado:
+                restaurar_plan_guardado(plan)
+                conn.execute('DELETE FROM guardados_pendientes WHERE id = ?', (operacion,))
+                conn.commit()
+            restaurado = True
+        except Exception:
+            app.logger.exception('Recuperación pendiente; se conserva el diario y los respaldos')
+        return jsonify({'success': False, 'message': 'No se pudo completar el guardado. '
+                        'Tus datos siguen en el formulario; intenta nuevamente.'}), 500
+    finally:
+        conn.close()
+        if temporal and (terminado or restaurado or not registrado):
+            shutil.rmtree(temporal, ignore_errors=True)
 
 
 # --- RUTAS DE BASE DE DATOS ---
@@ -857,6 +1021,7 @@ def guardar_proveedor():
         return jsonify({"success": False, "message": str(e)})
 
 @app.route('/get_mapeo_proveedores')
+@documentos_bloqueados
 def get_mapeo_proveedores():
     mapeo = {}
     for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS, CARPETA_SERVICIOS, CARPETA_SERVICIOS_EDITADAS, CARPETA_MANTENIMIENTO, CARPETA_MANTENIMIENTO_EDITADAS]:
@@ -874,6 +1039,7 @@ def get_mapeo_proveedores():
     return jsonify(mapeo)
 
 @app.route('/get_mapeo_emisores')
+@documentos_bloqueados
 def get_mapeo_emisores():
     mapeo = {}
     for carpeta in [CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS, CARPETA_SERVICIOS, CARPETA_SERVICIOS_EDITADAS, CARPETA_MANTENIMIENTO, CARPETA_MANTENIMIENTO_EDITADAS]:
@@ -947,6 +1113,7 @@ def obtener_siguiente_voucher_por_empresa(empresa_name):
     return siguiente
 
 @app.route('/get_siguiente_voucher')
+@documentos_bloqueados
 def get_siguiente_voucher():
     empresa = request.args.get('empresa', '').strip()
     siguiente = obtener_siguiente_voucher_por_empresa(empresa)

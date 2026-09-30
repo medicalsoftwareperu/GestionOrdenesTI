@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guía de Baja - Medical</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.2">
+<script src="{{ url_for('static', filename='documentos.js') }}?v=20260930-1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   /* Ajustes extra rápidos para la Guía de Baja */
@@ -227,12 +228,12 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="item-index" style="font-weight:bold; color:#555;"></td>
-      <td><input type="text" value="${data.codigo||''}" placeholder="—" style="text-align:center;"></td>
-      <td><input type="text" value="${data.desc||''}" placeholder="Descripción del equipo" style="text-align:center;"></td>
-      <td><input type="text" value="${data.motivo||''}" placeholder="Malogrado" style="text-align:center;"></td>
-      <td><input type="text" value="${data.modelo||''}" placeholder="Modelo" style="text-align:center;"></td>
-      <td><input type="text" value="${data.marca||''}" placeholder="Marca" style="text-align:center;"></td>
-      <td><input type="number" value="${data.qty||1}" min="1" class="qty-input" oninput="recalc()" style="text-align:center;"></td>
+      <td><input type="text" value="${escaparTextoHTML(data.codigo||'')}" placeholder="—" style="text-align:center;"></td>
+      <td><input type="text" value="${escaparTextoHTML(data.desc||'')}" placeholder="Descripción del equipo" style="text-align:center;"></td>
+      <td><input type="text" value="${escaparTextoHTML(data.motivo||'')}" placeholder="Malogrado" style="text-align:center;"></td>
+      <td><input type="text" value="${escaparTextoHTML(data.modelo||'')}" placeholder="Modelo" style="text-align:center;"></td>
+      <td><input type="text" value="${escaparTextoHTML(data.marca||'')}" placeholder="Marca" style="text-align:center;"></td>
+      <td><input type="number" value="${escaparTextoHTML(data.qty||1)}" min="1" class="qty-input" oninput="recalc()" style="text-align:center;"></td>
       <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -271,11 +272,26 @@
   async function guardarEnHistorial() {
     const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Guía de Baja?' : '¿Deseas guardar esta Guía de Baja en el historial?';
     if (!confirm(confirmMsg)) return;
+    if (!iniciarGuardadoDocumento(EDIT_MODE)) return;
+    let guardadoExitoso = false;
 
     window.scrollTo(0, 0);
     const elemento = document.getElementById('baja-doc');
-    const numeroDoc = document.getElementById('baja-number').value || 'SinNumero';
-    const nombreArchivo = `BAJA_${numeroDoc}.pdf`;
+    let numeroDoc = document.getElementById('baja-number').value || 'SinNumero';
+    let nombreArchivo = `BAJA_${numeroDoc}.pdf`;
+
+    let reserva;
+    try {
+      reserva = await reservarNumeroDocumento('bajas', nombreArchivo, EDIT_MODE);
+      nombreArchivo = reserva.nombre;
+      numeroDoc = reserva.numero;
+      document.getElementById('baja-number').value = numeroDoc;
+    } catch (error) {
+      finalizarGuardadoDocumento(false, EDIT_MODE);
+      alert('❌ ' + error.message);
+      return;
+    }
+
 
     // Recolectar ítems para la búsqueda
     const items = [];
@@ -344,7 +360,7 @@
     // Esperar un frame para que el navegador aplique los estilos claros
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+    Promise.resolve().then(() => html2pdf().set(opciones).from(elemento).output('blob')).then(function(pdfBlob) {
       // Restaurar el tema original después de capturar
       document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
       const formData = new FormData();
@@ -352,14 +368,16 @@
       formData.append('items', JSON.stringify(items));
       formData.append('edit_mode', EDIT_MODE ? 'true' : 'false');
       formData.append('metadata', JSON.stringify(metadata));
+      formData.append('reserva', reserva.reserva);
 
-      fetch('/guardar_pdf', {
+      return fetch('/guardar_pdf', {
         method: 'POST',
         body: formData
       })
       .then(respuesta => respuesta.json())
       .then(datos => {
         if (datos.success) {
+          guardadoExitoso = true;
           alert('✅ ¡Guardado exitosamente!');
           window.open('/ver_pdf/bajas/' + nombreArchivo, '_blank');
           if (EDIT_MODE) {
@@ -375,6 +393,13 @@
         console.error('Error:', error);
         alert('❌ Error de conexión.');
       });
+    }).catch(error => {
+      document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
+      elemento.classList.remove('pdf-printing');
+      console.error('Error generando el PDF:', error);
+      alert('❌ No se pudo generar el PDF. Tus datos siguen en el formulario; intenta nuevamente.');
+    }).finally(() => {
+      finalizarGuardadoDocumento(guardadoExitoso, EDIT_MODE);
     });
   }
 

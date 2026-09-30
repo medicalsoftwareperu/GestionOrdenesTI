@@ -257,6 +257,7 @@
 </div>
 
 <!-- SCRIPTS DE LÓGICA -->
+<script src="{{ url_for('static', filename='documentos.js') }}?v=20260930-1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
@@ -530,9 +531,9 @@
     const tbody = document.getElementById('items-body');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="text" value="${data.detalle||''}" placeholder="Detalle / Descripción del pago" oninput="recalc()"></td>
-      <td><input type="text" value="${data.comprobante||''}" placeholder="Comprobante (ej. E001-422)" oninput="recalc()"></td>
-      <td class="money"><input type="number" value="${data.monto !== undefined ? data.monto : ''}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
+      <td><input type="text" value="${escaparTextoHTML(data.detalle||'')}" placeholder="Detalle / Descripción del pago" oninput="recalc()"></td>
+      <td><input type="text" value="${escaparTextoHTML(data.comprobante||'')}" placeholder="Comprobante (ej. E001-422)" oninput="recalc()"></td>
+      <td class="money"><input type="number" value="${escaparTextoHTML(data.monto !== undefined ? data.monto : '')}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
       <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
     `;
     tbody.appendChild(tr);
@@ -567,13 +568,15 @@
     }
     const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Orden de Pago?' : '¿Deseas guardar esta Orden de Pago en el historial?';
     if (!confirm(confirmMsg)) return;
+    if (!iniciarGuardadoDocumento(EDIT_MODE)) return;
+    let guardadoExitoso = false;
 
     await registrarProv(); 
 
     window.scrollTo(0, 0);
 
     const elemento = document.getElementById('oc-doc');
-    const numeroOP = document.getElementById('oc-number').value || 'SinNumero';
+    let numeroOP = document.getElementById('oc-number').value || 'SinNumero';
     
     let nombreArchivo;
     if (EDIT_MODE) {
@@ -581,6 +584,19 @@
     } else {
       const prefijo = obtenerAbreviaturaEmpresa(document.getElementById('razon-social').value);
       nombreArchivo = `${prefijo}_${numeroOP}.pdf`;
+    }
+
+
+    let reserva;
+    try {
+      reserva = await reservarNumeroDocumento('pagos', nombreArchivo, EDIT_MODE);
+      nombreArchivo = reserva.nombre;
+      numeroOP = reserva.numero;
+      document.getElementById('oc-number').value = numeroOP;
+    } catch (error) {
+      finalizarGuardadoDocumento(false, EDIT_MODE);
+      alert('❌ ' + error.message);
+      return;
     }
 
     const items = [];
@@ -638,7 +654,7 @@
     // Esperar un frame para que el navegador aplique los estilos claros
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+    Promise.resolve().then(() => html2pdf().set(opciones).from(elemento).output('blob')).then(function(pdfBlob) {
       // Restaurar el tema original después de capturar
       document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
       const formData = new FormData();
@@ -646,14 +662,16 @@
       formData.append('items', JSON.stringify(items));
       formData.append('edit_mode', EDIT_MODE ? 'true' : 'false');
       formData.append('metadata', JSON.stringify(metadata));
+      formData.append('reserva', reserva.reserva);
 
-      fetch('/guardar_pdf', {
+      return fetch('/guardar_pdf', {
         method: 'POST',
         body: formData
       })
       .then(respuesta => respuesta.json())
       .then(datos => {
         if (datos.success) {
+          guardadoExitoso = true;
           alert('✅ ¡Orden de Pago guardada exitosamente!');
           window.open('/ver_pdf/pagos/' + nombreArchivo, '_blank');
           window.location.href = '/historial';
@@ -665,6 +683,13 @@
         console.error('Error:', error);
         alert('❌ Error de conexión al intentar guardar.');
       });
+    }).catch(error => {
+      document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
+      elemento.classList.remove('pdf-printing');
+      console.error('Error generando el PDF:', error);
+      alert('❌ No se pudo generar el PDF. Tus datos siguen en el formulario; intenta nuevamente.');
+    }).finally(() => {
+      finalizarGuardadoDocumento(guardadoExitoso, EDIT_MODE);
     });
   }
 </script>

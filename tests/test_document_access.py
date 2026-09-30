@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import sqlite3
+import sys
 import tempfile
 import unittest
 
@@ -24,6 +25,14 @@ class DocumentAccessTests(unittest.TestCase):
         shutil.copytree(source.parent / 'templates', self.root / 'templates')
         spec = importlib.util.spec_from_file_location('gestionguias_test_app', self.root / 'app.py')
         self.module = importlib.util.module_from_spec(spec)
+        previous = sys.modules.get(spec.name)
+        sys.modules[spec.name] = self.module
+        def restore_module():
+            if previous is None:
+                sys.modules.pop(spec.name, None)
+            else:
+                sys.modules[spec.name] = previous
+        self.addCleanup(restore_module)
         # La copia no incluye .env, database.db ni historial de producción.
         spec.loader.exec_module(self.module)
         self.module.app.config.update(TESTING=True, SECRET_KEY='isolated-test-key')

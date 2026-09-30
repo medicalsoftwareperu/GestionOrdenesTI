@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orden de Compra - Medical</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.2">
+<script src="{{ url_for('static', filename='documentos.js') }}?v=20260930-1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -506,23 +507,23 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="num">
-        <input type="text" class="print-hide" value="${data.jira||''}" placeholder="—" oninput="recalc()">
-        <span class="print-show">${data.jira||''}</span>
+        <input type="text" class="print-hide" value="${escaparTextoHTML(data.jira||'')}" placeholder="—" oninput="recalc()">
+        <span class="print-show">${escaparTextoHTML(data.jira||'')}</span>
       </td>
       <td>
-        <input type="text" class="print-hide" value="${data.desc||''}" placeholder="Descripción del ítem" oninput="recalc()">
-        <span class="print-show">${data.desc||''}</span>
+        <input type="text" class="print-hide" value="${escaparTextoHTML(data.desc||'')}" placeholder="Descripción del ítem" oninput="recalc()">
+        <span class="print-show">${escaparTextoHTML(data.desc||'')}</span>
       </td>
       <td class="num">
-        <input type="text" class="print-hide" value="${data.marca||''}" placeholder="Marca" oninput="recalc()">
-        <span class="print-show">${data.marca||''}</span>
+        <input type="text" class="print-hide" value="${escaparTextoHTML(data.marca||'')}" placeholder="Marca" oninput="recalc()">
+        <span class="print-show">${escaparTextoHTML(data.marca||'')}</span>
       </td>
       <td class="num">
-        <input type="text" class="print-hide" value="${data.modelo||''}" placeholder="Modelo" oninput="recalc()">
-        <span class="print-show">${data.modelo||''}</span>
+        <input type="text" class="print-hide" value="${escaparTextoHTML(data.modelo||'')}" placeholder="Modelo" oninput="recalc()">
+        <span class="print-show">${escaparTextoHTML(data.modelo||'')}</span>
       </td>
-      <td class="num"><input type="number" value="${data.qty !== undefined ? data.qty : 1}" min="0" oninput="recalc()"></td>
-      <td class="money"><input type="number" value="${data.unit !== undefined ? data.unit : ''}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
+      <td class="num"><input type="number" value="${escaparTextoHTML(data.qty !== undefined ? data.qty : 1)}" min="0" oninput="recalc()"></td>
+      <td class="money"><input type="number" value="${escaparTextoHTML(data.unit !== undefined ? data.unit : '')}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
       <td class="total-cell">${simboloMoneda} 0.00</td>
       <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
     `;
@@ -584,6 +585,8 @@
   async function guardarEnHistorial() {
     const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Orden de Compra?' : '¿Deseas guardar esta Orden de Compra en el historial?';
     if (!confirm(confirmMsg)) return;
+    if (!iniciarGuardadoDocumento(EDIT_MODE)) return;
+    let guardadoExitoso = false;
 
     await registrarProv(); 
 
@@ -591,8 +594,21 @@
     window.scrollTo(0, 0);
 
     const elemento = document.getElementById('oc-doc');
-    const numeroOC = document.getElementById('oc-number').value || 'SinNumero';
-    const nombreArchivo = `OC_${numeroOC}.pdf`;
+    let numeroOC = document.getElementById('oc-number').value || 'SinNumero';
+    let nombreArchivo = `OC_${numeroOC}.pdf`;
+
+    let reserva;
+    try {
+      reserva = await reservarNumeroDocumento('compras', nombreArchivo, EDIT_MODE);
+      nombreArchivo = reserva.nombre;
+      numeroOC = reserva.numero;
+      document.getElementById('oc-number').value = numeroOC;
+    } catch (error) {
+      finalizarGuardadoDocumento(false, EDIT_MODE);
+      alert('❌ ' + error.message);
+      return;
+    }
+
 
     // Recolectar ítems para la búsqueda
     const items = [];
@@ -681,7 +697,7 @@
     // Esperar un frame para que el navegador aplique los estilos claros
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+    Promise.resolve().then(() => html2pdf().set(opciones).from(elemento).output('blob')).then(function(pdfBlob) {
       // Restaurar el tema original después de capturar
       document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
       elemento.classList.remove('pdf-printing');
@@ -690,14 +706,16 @@
       formData.append('items', JSON.stringify(items));
       formData.append('edit_mode', EDIT_MODE ? 'true' : 'false');
       formData.append('metadata', JSON.stringify(metadata));
+      formData.append('reserva', reserva.reserva);
 
-      fetch('/guardar_pdf', {
+      return fetch('/guardar_pdf', {
         method: 'POST',
         body: formData
       })
       .then(respuesta => respuesta.json())
       .then(datos => {
         if (datos.success) {
+          guardadoExitoso = true;
           alert('✅ ¡Guardado exitosamente en la carpeta historial!');
           window.open('/ver_pdf/compras/' + nombreArchivo, '_blank');
           if (EDIT_MODE) {
@@ -711,6 +729,13 @@
         console.error('Error:', error);
         alert('❌ Error de conexión al intentar guardar.');
       });
+    }).catch(error => {
+      document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
+      elemento.classList.remove('pdf-printing');
+      console.error('Error generando el PDF:', error);
+      alert('❌ No se pudo generar el PDF. Tus datos siguen en el formulario; intenta nuevamente.');
+    }).finally(() => {
+      finalizarGuardadoDocumento(guardadoExitoso, EDIT_MODE);
     });
   }
 

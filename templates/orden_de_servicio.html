@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orden de Servicio - Marketing</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.2">
+<script src="{{ url_for('static', filename='documentos.js') }}?v=20260930-1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   table.items-table tbody td textarea {
@@ -694,7 +695,7 @@
       box.style.position = 'relative';
       box.style.display = 'inline-block';
       box.innerHTML = `
-        <img src="${base64Data}" style="max-height: 120px; border-radius: 4px; border: 1px solid var(--gray-mid); display: block;">
+        <img src="${escaparTextoHTML(base64Data)}" style="max-height: 120px; border-radius: 4px; border: 1px solid var(--gray-mid); display: block;">
         <button class="no-print del-img-btn" onclick="eliminarImagen(${index})" title="Eliminar imagen" style="position: absolute; top: -5px; right: -5px; background: rgba(192, 44, 44, 0.9); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer;">✕</button>
       `;
       contenedor.appendChild(box);
@@ -720,11 +721,11 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>
-        <textarea class="print-hide" placeholder="Detalle del servicio..." oninput="autoExpand(this); recalc()">${data.servicio||''}</textarea>
-        <span class="print-show">${data.servicio||''}</span>
+        <textarea class="print-hide" placeholder="Detalle del servicio..." oninput="autoExpand(this); recalc()">${escaparTextoHTML(data.servicio||'')}</textarea>
+        <span class="print-show">${escaparTextoHTML(data.servicio||'')}</span>
       </td>
-      <td class="num"><input type="number" value="${data.qty !== undefined ? data.qty : 1}" min="0" oninput="recalc()"></td>
-      <td class="money"><input type="number" value="${data.unit !== undefined ? data.unit : ''}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
+      <td class="num"><input type="number" value="${escaparTextoHTML(data.qty !== undefined ? data.qty : 1)}" min="0" oninput="recalc()"></td>
+      <td class="money"><input type="number" value="${escaparTextoHTML(data.unit !== undefined ? data.unit : '')}" placeholder="0.00" min="0" step="0.01" oninput="recalc()"></td>
       <td class="total-cell">${simboloMoneda} 0.00</td>
       <td style="text-align:center" class="no-print"><button class="btn-del-row" onclick="delRow(this)" title="Eliminar fila">✕</button></td>
     `;
@@ -806,13 +807,28 @@
   async function guardarEnHistorial() {
     const confirmMsg = EDIT_MODE ? '¿Deseas guardar los cambios en esta Orden de Servicio?' : '¿Deseas guardar esta Orden de Servicio en el historial?';
     if (!confirm(confirmMsg)) return;
+    if (!iniciarGuardadoDocumento(EDIT_MODE)) return;
+    let guardadoExitoso = false;
 
     await registrarProv(); 
     window.scrollTo(0, 0);
 
     const elemento = document.getElementById('oc-doc');
-    const numeroOS = document.getElementById('oc-number').value || 'SinNumero';
-    const nombreArchivo = `OS_${numeroOS}.pdf`;
+    let numeroOS = document.getElementById('oc-number').value || 'SinNumero';
+    let nombreArchivo = `OS_${numeroOS}.pdf`;
+
+    let reserva;
+    try {
+      reserva = await reservarNumeroDocumento('servicios', nombreArchivo, EDIT_MODE);
+      nombreArchivo = reserva.nombre;
+      numeroOS = reserva.numero;
+      document.getElementById('oc-number').value = numeroOS;
+    } catch (error) {
+      finalizarGuardadoDocumento(false, EDIT_MODE);
+      alert('❌ ' + error.message);
+      return;
+    }
+
 
     const items = [];
     document.querySelectorAll('#items-body tr').forEach(tr => {
@@ -887,7 +903,7 @@
 
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    html2pdf().set(opciones).from(elemento).output('blob').then(function(pdfBlob) {
+    Promise.resolve().then(() => html2pdf().set(opciones).from(elemento).output('blob')).then(function(pdfBlob) {
       document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
       elemento.classList.remove('pdf-printing');
       const formData = new FormData();
@@ -895,14 +911,16 @@
       formData.append('items', JSON.stringify(items));
       formData.append('edit_mode', EDIT_MODE ? 'true' : 'false');
       formData.append('metadata', JSON.stringify(metadata));
+      formData.append('reserva', reserva.reserva);
 
-      fetch('/guardar_pdf', {
+      return fetch('/guardar_pdf', {
         method: 'POST',
         body: formData
       })
       .then(respuesta => respuesta.json())
       .then(datos => {
         if (datos.success) {
+          guardadoExitoso = true;
           alert('✅ ¡Guardado exitosamente en la carpeta historial!');
           window.open('/ver_pdf/servicios/' + nombreArchivo, '_blank');
           if (EDIT_MODE) {
@@ -916,6 +934,13 @@
         console.error('Error:', error);
         alert('❌ Error de conexión al intentar guardar.');
       });
+    }).catch(error => {
+      document.documentElement.setAttribute('data-theme', temaOriginal || 'light');
+      elemento.classList.remove('pdf-printing');
+      console.error('Error generando el PDF:', error);
+      alert('❌ No se pudo generar el PDF. Tus datos siguen en el formulario; intenta nuevamente.');
+    }).finally(() => {
+      finalizarGuardadoDocumento(guardadoExitoso, EDIT_MODE);
     });
   }
 
