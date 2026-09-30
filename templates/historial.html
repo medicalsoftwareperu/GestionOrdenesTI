@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="{{ url_for('static', filename='seguridad.js') }}?v=20260930-1"></script>
     <meta charset="UTF-8">
     <title>Historial de Documentos - Medical</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.2">
@@ -348,7 +350,7 @@
         try {
             const selectProv = document.getElementById('filtro-proveedor');
             if (selectProv) {
-                const resProv = await fetch('/get_proveedores?_=' + Date.now());
+                const resProv = await fetchSeguro('/get_proveedores?_=' + Date.now());
                 const proveedores = await resProv.json();
                 
                 // Eliminar duplicados y ordenar alfabéticamente
@@ -369,7 +371,7 @@
         try {
             const selectEmp = document.getElementById('filtro-razon-social');
             if (selectEmp) {
-                const resEmp = await fetch('/get_mis_empresas?_=' + Date.now());
+                const resEmp = await fetchSeguro('/get_mis_empresas?_=' + Date.now());
                 const empresas = await resEmp.json();
                 empresas.forEach(emp => {
                     const opt = document.createElement('option');
@@ -384,7 +386,7 @@
 
         // Cargar mapeo de archivo -> proveedor
         try {
-            const resMap = await fetch('/get_mapeo_proveedores?_=' + Date.now());
+            const resMap = await fetchSeguro('/get_mapeo_proveedores?_=' + Date.now());
             mapeoProveedores = await resMap.json();
         } catch (e) {
             console.error("Error cargando mapeo de proveedores:", e);
@@ -392,7 +394,7 @@
 
         // Cargar mapeo de archivo -> emisor (Razón Social)
         try {
-            const resMapE = await fetch('/get_mapeo_emisores?_=' + Date.now());
+            const resMapE = await fetchSeguro('/get_mapeo_emisores?_=' + Date.now());
             mapeoEmisores = await resMapE.json();
         } catch (e) {
             console.error("Error cargando mapeo de emisores:", e);
@@ -416,7 +418,7 @@
         // Si hay consulta por texto, le preguntamos al backend
         if (query !== '') {
             try {
-                const res = await fetch('/buscar_archivos?q=' + encodeURIComponent(query));
+                const res = await fetchSeguro('/buscar_archivos?q=' + encodeURIComponent(query));
                 archivosValidosDeBusqueda = await res.json();
             } catch (e) {
                 console.error("Error buscando archivos:", e);
@@ -483,7 +485,7 @@
         formData.append('nombre_oc', archivoOCActual);
 
         try {
-            const res = await fetch('/subir_factura', {
+            const res = await fetchSeguro('/subir_factura', {
                 method: 'POST',
                 body: formData
             });
@@ -511,7 +513,7 @@
     async function cargarComprasDisponibles() {
         if (listaComprasDisponibles.length > 0) return;
         try {
-            const res = await fetch('/get_lista_compras');
+            const res = await fetchSeguro('/get_lista_compras');
             if (res.ok) {
                 listaComprasDisponibles = await res.json();
             }
@@ -585,7 +587,7 @@
 
     async function guardarVinculoOC(nombreOP, nombreOC) {
         try {
-            const res = await fetch('/vincular_oc', {
+            const res = await fetchSeguro('/vincular_oc', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

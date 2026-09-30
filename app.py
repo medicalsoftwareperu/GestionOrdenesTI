@@ -2,9 +2,11 @@ import os
 import re
 import sqlite3
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import hashlib
+import hmac
+import secrets
 import shutil
 import tempfile
 import time
@@ -27,6 +29,7 @@ if os.path.exists(ruta_env):
         print("Error leyendo el archivo .env:", e)
 
 app = Flask(__name__)
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Lax')
 
 # Configurar la clave secreta desde variables de entorno
 app.secret_key = os.getenv('FLASK_SECRET_KEY') or os.urandom(32)
@@ -208,6 +211,20 @@ with get_db_connection() as conn:
             plan TEXT NOT NULL
         )
     ''')
+
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS auditoria (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT NOT NULL,
+            usuario TEXT NOT NULL,
+            rol TEXT NOT NULL,
+            accion TEXT NOT NULL,
+            tipo TEXT NOT NULL,
+            nombre TEXT NOT NULL,
+            detalle TEXT NOT NULL DEFAULT '{}'
+        )
+    ''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_auditoria_documento ON auditoria(tipo, nombre, id)')
 
     # Agregar columnas dinámicamente si no existen
     for query in [
@@ -417,7 +434,15 @@ def recuperar_guardados_pendientes():
         conn.close()
 
 
-def guardar_archivo_recuperable(destino, contenido):
+def registrar_evento(conn, accion, tipo, nombre, detalle=None):
+    # La misma transacción confirma el cambio y su registro; no incluir contenido sensible.
+    conn.execute('INSERT INTO auditoria (fecha, usuario, rol, accion, tipo, nombre, detalle) '
+                 'VALUES (?, ?, ?, ?, ?, ?, ?)',
+                 (datetime.now(timezone.utc).isoformat(timespec='seconds'), session['usuario'],
+                  session['rol'], accion, tipo, nombre, json.dumps(detalle or {}, ensure_ascii=False)))
+
+
+def guardar_archivo_recuperable(destino, contenido, evento=None):
     """Publicar un archivo completo bajo bloqueo_documentos y recuperar un reinicio."""
     conn = get_db_connection()
     temporal = None
@@ -442,6 +467,8 @@ def guardar_archivo_recuperable(destino, contenido):
         registrado = True
         conn.commit()
         os.replace(preparado, destino)
+        if evento:
+            registrar_evento(conn, **evento)
         conn.execute('DELETE FROM guardados_pendientes WHERE id = ?', (operacion,))
         conn.commit()
         terminado = True
@@ -541,6 +568,39 @@ def verificar_autenticacion():
         return redirect(url_for('login'))
     session['rol'] = rol
 
+def token_csrf():
+    if 'csrf_token' not in session:
+        session['csrf_token'] = secrets.token_hex(32)
+    return session['csrf_token']
+
+
+@app.context_processor
+def contexto_seguridad():
+    return {'csrf_token': token_csrf()}
+
+
+@app.before_request
+def verificar_csrf():
+    if not request.endpoint or request.endpoint == 'static':
+        return
+    esperado = token_csrf()
+    if request.method in ('GET', 'HEAD', 'OPTIONS'):
+        return
+    recibido = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
+    if not isinstance(recibido, str) or not hmac.compare_digest(recibido.encode(), esperado.encode()):
+        mensaje = 'La sesión cambió. Vuelve a intentar la operación.'
+        if request.endpoint == 'login':
+            return render_template('login.html', error=mensaje), 403
+        return jsonify({'success': False, 'code': 'csrf_invalido', 'message': mensaje}), 403
+
+
+@app.route('/csrf-token')
+def obtener_token_csrf():
+    respuesta = jsonify({'csrf_token': token_csrf()})
+    respuesta.headers['Cache-Control'] = 'no-store'
+    return respuesta
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     # Si ya está logueado, redirigir al index
@@ -552,19 +612,20 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
+        if username in USER_CREDENTIALS and USER_CREDENTIALS[username] and USER_CREDENTIALS[username] == password:
+            session.clear()
             session['usuario'] = username
             session['rol'] = USER_ROLES.get(username, 'sistemas')
+            token_csrf()
             return redirect(url_for('index'))
         else:
             error = 'Usuario o contraseña incorrectos.'
             
     return render_template('login.html', error=error)
 
-@app.route('/logout')
+@app.route('/logout', methods=['POST'])
 def logout():
-    session.pop('usuario', None)
-    session.pop('rol', None)
+    session.clear()
     return redirect(url_for('login'))
 
 @app.route('/')
@@ -789,7 +850,9 @@ def subir_factura():
         contenido = archivo_pdf.read()
         if not contenido.startswith(b'%PDF-'):
             return jsonify({'success': False, 'message': 'El archivo recibido no es un PDF válido'}), 400
-        guardar_archivo_recuperable(ruta_guardado, contenido)
+        accion = 'reemplazar_factura' if os.path.isfile(ruta_guardado) else 'subir_factura'
+        guardar_archivo_recuperable(ruta_guardado, contenido,
+            evento={'accion': accion, 'tipo': 'compras', 'nombre': nombre_oc})
         return jsonify({'success': True, 'message': 'Factura subida exitosamente'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error al guardar el archivo: {str(e)}'}), 500
@@ -846,7 +909,9 @@ def vincular_oc():
             metadata.pop('orden_compra_referencia', None)
             
         guardar_archivo_recuperable(ruta_json,
-            json.dumps(metadata, ensure_ascii=False, indent=2).encode('utf-8'))
+            json.dumps(metadata, ensure_ascii=False, indent=2).encode('utf-8'),
+            evento={'accion': 'vincular_compra' if nombre_oc else 'desvincular_compra',
+                    'tipo': 'pagos', 'nombre': nombre_op, 'detalle': {'orden_compra': nombre_oc}})
             
         return jsonify({'success': True, 'message': 'Vínculo actualizado exitosamente'})
     except Exception as e:
@@ -1037,6 +1102,7 @@ def guardar_pdf():
             conn.execute('UPDATE contadores SET valor = MAX(valor, ?) WHERE tipo = ?', (siguiente, tipo))
         if reserva:
             conn.execute("UPDATE reservas_documentos SET estado = 'guardado', huella = ? WHERE token = ?", (huella, token))
+        registrar_evento(conn, 'editar_documento' if edit_mode else 'crear_documento', tipo, nombre)
         conn.execute('DELETE FROM guardados_pendientes WHERE id = ?', (operacion,))
         conn.commit()
         terminado = True
@@ -1106,6 +1172,7 @@ def guardar_proveedor():
                     data.get('contacto_nombre', ''),
                     data.get('contacto_telefono', '')
                 ))
+            registrar_evento(conn, 'guardar_proveedor', 'proveedores', data.get('nombre') or '')
             conn.execute('COMMIT')
         return jsonify({"success": True})
     except Exception as e:

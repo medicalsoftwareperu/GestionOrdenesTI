@@ -9,7 +9,7 @@ function fixture() {
   const calls = [], alerts = [];
   const context = vm.createContext({ document: {
     querySelectorAll: () => [button], getElementById: () => company
-  }, alert: text => alerts.push(text), fetch: async (url, options) => {
+  }, alert: text => alerts.push(text), fetchSeguro: async (url, options) => {
     calls.push({url, body: JSON.parse(options.body)});
     return {ok: true, json: async () => ({success: true, nombre: 'OC_20260930-0002.pdf', numero: '20260930-0002', reserva: 'token'})};
   }});
@@ -53,6 +53,6 @@ test('cambiar empresa requiere otra reserva; una edición conserva el número si
 });
 test('una reserva rechazada produce un error y se puede reintentar', async () => {
   const {context:c} = fixture();
-  c.fetch = async () => ({ok: false, json: async () => ({success: false, message: 'Intenta nuevamente'})});
+  c.fetchSeguro = async () => ({ok: false, json: async () => ({success: false, message: 'Intenta nuevamente'})});
   await assert.rejects(c.reservarNumeroDocumento('compras', 'OC_20260930-0001.pdf', false), /Intenta nuevamente/);
 });

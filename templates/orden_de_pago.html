@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta name="csrf-token" content="{{ csrf_token }}">
+<script src="{{ url_for('static', filename='seguridad.js') }}?v=20260930-1"></script>
   <meta charset="UTF-8">
   <title>Orden de Pago - Medical</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.3">
@@ -257,7 +259,7 @@
 </div>
 
 <!-- SCRIPTS DE LÓGICA -->
-<script src="{{ url_for('static', filename='documentos.js') }}?v=20260930-1"></script>
+<script src="{{ url_for('static', filename='documentos.js') }}?v=20260930-2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <script>
@@ -284,11 +286,11 @@
   const dropdownEmpresa = document.getElementById('mi-empresa-dropdown');
 
   document.addEventListener("DOMContentLoaded", () => {
-    fetch('/get_proveedores?_=' + Date.now())
+    fetchSeguro('/get_proveedores?_=' + Date.now())
       .then(r => r.json())
       .then(data => { 
         listaProveedores = data;
-        return fetch('/get_mis_empresas?_=' + Date.now());
+        return fetchSeguro('/get_mis_empresas?_=' + Date.now());
       })
       .then(r => r.json())
       .then(data => {
@@ -304,7 +306,7 @@
   async function actualizarVoucherPorEmpresa(empresaName) {
     if (!empresaName || empresaName.trim() === '') return;
     try {
-      const res = await fetch('/get_siguiente_voucher?empresa=' + encodeURIComponent(empresaName));
+      const res = await fetchSeguro('/get_siguiente_voucher?empresa=' + encodeURIComponent(empresaName));
       const data = await res.json();
       if (data.success) {
         document.getElementById('oc-number').value = data.voucher;
@@ -336,7 +338,7 @@
 
   async function cargarMetadatosDeEdicion() {
     try {
-      const res = await fetch(`/get_metadata/pagos/${EDIT_FILENAME}`);
+      const res = await fetchSeguro(`/get_metadata/pagos/${EDIT_FILENAME}`);
       const result = await res.json();
       if (result.success) {
         const data = result.data;
@@ -491,14 +493,14 @@
     if (!p.nombre) return;
     
     try {
-      const res = await fetch('/guardar_proveedor', {
+      const res = await fetchSeguro('/guardar_proveedor', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(p)
       });
       const resData = await res.json();
       if (resData.success) {
-        const pRes = await fetch('/get_proveedores?_=' + Date.now());
+        const pRes = await fetchSeguro('/get_proveedores?_=' + Date.now());
         listaProveedores = await pRes.json();
       }
     } catch (e) {
@@ -664,7 +666,7 @@
       formData.append('metadata', JSON.stringify(metadata));
       formData.append('reserva', reserva.reserva);
 
-      return fetch('/guardar_pdf', {
+      return fetchSeguro('/guardar_pdf', {
         method: 'POST',
         body: formData
       })

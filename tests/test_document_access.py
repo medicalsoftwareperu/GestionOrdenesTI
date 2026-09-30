@@ -13,6 +13,20 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+from flask.testing import FlaskClient
+from werkzeug.datastructures import Headers
+
+
+class CsrfTestClient(FlaskClient):
+    # Los casos existentes prueban roles/guardado con la misma cabecera que envía la interfaz.
+    # Los casos CSRF usan open() directamente para probar peticiones sin esa cabecera.
+    def post(self, *args, **kwargs):
+        with self.session_transaction() as current:
+            token = current.setdefault('csrf_token', '1' * 64)
+        headers = Headers(kwargs.pop('headers', None))
+        headers.setdefault('X-CSRF-Token', token)
+        return super().post(*args, headers=headers, **kwargs)
 
 
 class DocumentAccessTests(unittest.TestCase):
@@ -36,6 +50,7 @@ class DocumentAccessTests(unittest.TestCase):
         # La copia no incluye .env, database.db ni historial de producción.
         spec.loader.exec_module(self.module)
         self.module.app.config.update(TESTING=True, SECRET_KEY='isolated-test-key')
+        self.module.app.test_client_class = CsrfTestClient
         self.client = self.module.app.test_client()
         self.names = {
             'compras': 'OC_20260930-0001.pdf', 'bajas': 'BAJA_20260930-0001.pdf',
@@ -222,8 +237,10 @@ class DocumentAccessTests(unittest.TestCase):
         for username, role in self.module.USER_ROLES.items():
             with self.client.session_transaction() as session:
                 session.clear()
-            response = self.client.post('/login', data={
-                'username': username, 'password': self.module.USER_CREDENTIALS[username]})
+            # Credencial ficticia: la copia de pruebas no contiene el .env del servidor.
+            with patch.dict(self.module.USER_CREDENTIALS, {username: 'password-ficticio-de-prueba'}):
+                response = self.client.post('/login', data={
+                    'username': username, 'password': 'password-ficticio-de-prueba'})
             self.assertEqual(response.status_code, 302)
             with self.client.session_transaction() as session:
                 self.assertEqual(session['rol'], role)

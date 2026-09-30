@@ -36,7 +36,7 @@ async function reservarNumeroDocumento(tipo, nombre, editMode) {
   const empresa = document.getElementById('razon-social')?.value || '';
   const clave = `${tipo}|${empresa}|${nombre}`;
   if (reservasPendientes.has(clave)) return reservasPendientes.get(clave);
-  const respuesta = await fetch('/reservar_documento', {
+  const respuesta = await fetchSeguro('/reservar_documento', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tipo, nombre, empresa })
   });
