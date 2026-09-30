@@ -311,6 +311,63 @@ def incrementar_numero(tipo):
         return nuevo
 
 
+# --- VALIDACIÓN Y PERMISOS DE DOCUMENTOS ---
+def configuracion_documento(tipo):
+    configuraciones = {
+        'compras': ('sistemas', CARPETA_COMPRAS, CARPETA_COMPRAS_EDITADAS, r'OC_[0-9]{8}-[0-9]{4,12}\.pdf', r'OC_[0-9]{1,12}-[0-9]{1,12}\.pdf'),
+        'bajas': ('sistemas', CARPETA_BAJAS, CARPETA_BAJAS_EDITADAS, r'BAJA_[0-9]{8}-[0-9]{4,12}\.pdf', r'BAJA_[0-9]{1,12}-[0-9]{1,12}\.pdf'),
+        'pagos': ('contabilidad', CARPETA_PAGOS, CARPETA_PAGOS_EDITADAS, r'OP_(?:[A-Za-z]{1,12}_)?[0-9]{4}-[0-9]{4,12}\.pdf', r'OP_(?:[A-Za-z]{1,12}_)?[0-9]{1,12}-[0-9]{1,12}\.pdf'),
+        'servicios': ('marketing', CARPETA_SERVICIOS, CARPETA_SERVICIOS_EDITADAS, r'OS_[0-9]{8}-[0-9]{4,12}\.pdf', r'OS_[0-9]{1,12}-[0-9]{1,12}\.pdf'),
+        'mantenimiento': ('mantenimiento', CARPETA_MANTENIMIENTO, CARPETA_MANTENIMIENTO_EDITADAS, r'OCM_[0-9]{8}-[0-9]{4,12}\.pdf', r'OCM_[0-9]{1,12}-[0-9]{1,12}\.pdf')
+    }
+    return configuraciones.get(tipo)
+
+
+def ruta_documento_segura(carpeta, nombre):
+    # Rechazar rutas en lugar de renombrarlas: conservar la identidad del documento.
+    if not isinstance(nombre, str) or not nombre or len(nombre) > 128:
+        raise ValueError('Nombre de archivo no válido')
+    if '/' in nombre or '\\' in nombre or '..' in nombre or any(ord(c) < 32 for c in nombre):
+        raise ValueError('Nombre de archivo no válido')
+    base = os.path.realpath(carpeta)
+    historial = os.path.realpath(CARPETA_HISTORIAL)
+    ruta = os.path.realpath(os.path.join(base, nombre))
+    if os.path.commonpath([historial, base]) != historial or os.path.commonpath([base, ruta]) != base:
+        raise ValueError('Ruta de archivo no válida')
+    return ruta
+
+
+def documento_existe(tipo, nombre):
+    configuracion = configuracion_documento(tipo)
+    if not configuracion:
+        return False
+    return any(os.path.isfile(ruta_documento_segura(carpeta, nombre)) for carpeta in configuracion[1:3])
+
+
+def validar_nombre_documento(tipo, nombre, permitir_historico=False):
+    configuracion = configuracion_documento(tipo)
+    if not configuracion or not isinstance(nombre, str):
+        raise ValueError('Tipo o nombre de documento no válido')
+    # Validar ambas ubicaciones, incluidas posibles rutas simbólicas.
+    for carpeta in configuracion[1:3]:
+        ruta_documento_segura(carpeta, nombre)
+    if re.fullmatch(configuracion[3], nombre):
+        return
+    # Los formatos antiguos solo se admiten si ya existen en su área.
+    if permitir_historico and re.fullmatch(configuracion[4], nombre) and documento_existe(tipo, nombre):
+        return
+    raise ValueError('Nombre de documento no válido')
+
+
+def ruta_metadatos_documento(tipo, nombre):
+    configuracion = configuracion_documento(tipo)
+    json_nombre = nombre[:-4] + '.json'
+    ruta_editada = ruta_documento_segura(configuracion[2], json_nombre)
+    if os.path.isfile(ruta_editada):
+        return ruta_editada
+    return ruta_documento_segura(configuracion[1], json_nombre)
+
+
 # --- RUTAS PRINCIPALES ---
 
 @app.before_request
@@ -326,9 +383,12 @@ def verificar_autenticacion():
     if 'usuario' not in session:
         return redirect(url_for('login'))
         
-    # Si ya inició sesión pero no tiene rol asignado en la sesión (por cookies antiguas), asignarlo
-    if 'rol' not in session:
-        session['rol'] = USER_ROLES.get(session['usuario'], 'sistemas')
+    # Recuperar siempre el rol de la cuenta, también para cookies antiguas.
+    rol = USER_ROLES.get(session['usuario'])
+    if not rol:
+        session.clear()
+        return redirect(url_for('login'))
+    session['rol'] = rol
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -366,6 +426,12 @@ def compras():
         return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
+        try:
+            validar_nombre_documento('compras', edit, permitir_historico=True)
+            if not documento_existe('compras', edit):
+                return 'Documento no encontrado', 404
+        except ValueError:
+            return 'Referencia de documento no válida', 400
         numero_oc = edit.replace('OC_', '').replace('.pdf', '')
         return render_template('orden_de_compra.html', numero_oc=numero_oc, edit_mode=True, edit_filename=edit)
     
@@ -380,6 +446,12 @@ def servicios():
         return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
+        try:
+            validar_nombre_documento('servicios', edit, permitir_historico=True)
+            if not documento_existe('servicios', edit):
+                return 'Documento no encontrado', 404
+        except ValueError:
+            return 'Referencia de documento no válida', 400
         numero_os = edit.replace('OS_', '').replace('.pdf', '')
         return render_template('orden_de_servicio.html', numero_os=numero_os, edit_mode=True, edit_filename=edit)
     
@@ -394,6 +466,12 @@ def mantenimiento():
         return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
+        try:
+            validar_nombre_documento('mantenimiento', edit, permitir_historico=True)
+            if not documento_existe('mantenimiento', edit):
+                return 'Documento no encontrado', 404
+        except ValueError:
+            return 'Referencia de documento no válida', 400
         numero_oc = edit.replace('OCM_', '').replace('.pdf', '')
         return render_template('orden_de_compra_mantenimiento.html', numero_oc=numero_oc, edit_mode=True, edit_filename=edit)
     
@@ -408,6 +486,12 @@ def bajas():
         return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
+        try:
+            validar_nombre_documento('bajas', edit, permitir_historico=True)
+            if not documento_existe('bajas', edit):
+                return 'Documento no encontrado', 404
+        except ValueError:
+            return 'Referencia de documento no válida', 400
         numero_baja = edit.replace('BAJA_', '').replace('.pdf', '')
         return render_template('guia_de_baja.html', numero_baja=numero_baja, edit_mode=True, edit_filename=edit)
         
@@ -422,6 +506,12 @@ def pagos():
         return redirect(url_for('index'))
     edit = request.args.get('edit', '')
     if edit:
+        try:
+            validar_nombre_documento('pagos', edit, permitir_historico=True)
+            if not documento_existe('pagos', edit):
+                return 'Documento no encontrado', 404
+        except ValueError:
+            return 'Referencia de documento no válida', 400
         match = re.search(r'OP_(?:[A-Za-z]+_)?(.+)\.pdf$', edit)
         numero_op = match.group(1) if match else edit.replace('OP_', '').replace('.pdf', '')
         return render_template('orden_de_pago.html', numero_op=numero_op, edit_mode=True, edit_filename=edit)
@@ -488,34 +578,31 @@ def historial():
 # --- RUTAS DE ARCHIVOS (PDF) ---
 @app.route('/ver_pdf/<tipo>/<nombre>')
 def ver_pdf(tipo, nombre):
-    rol = session.get('rol', 'sistemas')
-    if tipo == 'compras' and rol == 'sistemas':
-        if os.path.exists(os.path.join(CARPETA_COMPRAS_EDITADAS, nombre)):
-            return send_from_directory(CARPETA_COMPRAS_EDITADAS, nombre)
-        return send_from_directory(CARPETA_COMPRAS, nombre)
-    elif tipo == 'bajas' and rol == 'sistemas':
-        if os.path.exists(os.path.join(CARPETA_BAJAS_EDITADAS, nombre)):
-            return send_from_directory(CARPETA_BAJAS_EDITADAS, nombre)
-        return send_from_directory(CARPETA_BAJAS, nombre)
-    elif tipo == 'pagos' and rol == 'contabilidad':
-        if os.path.exists(os.path.join(CARPETA_PAGOS_EDITADAS, nombre)):
-            return send_from_directory(CARPETA_PAGOS_EDITADAS, nombre)
-        return send_from_directory(CARPETA_PAGOS, nombre)
-    elif tipo == 'servicios' and rol == 'marketing':
-        if os.path.exists(os.path.join(CARPETA_SERVICIOS_EDITADAS, nombre)):
-            return send_from_directory(CARPETA_SERVICIOS_EDITADAS, nombre)
-        return send_from_directory(CARPETA_SERVICIOS, nombre)
-    elif tipo == 'mantenimiento' and rol == 'mantenimiento':
-        if os.path.exists(os.path.join(CARPETA_MANTENIMIENTO_EDITADAS, nombre)):
-            return send_from_directory(CARPETA_MANTENIMIENTO_EDITADAS, nombre)
-        return send_from_directory(CARPETA_MANTENIMIENTO, nombre)
-    return "Archivo no encontrado o acceso no autorizado", 404
+    configuracion = configuracion_documento(tipo)
+    if not configuracion or session.get('rol') != configuracion[0]:
+        return "Archivo no encontrado o acceso no autorizado", 404
+    try:
+        validar_nombre_documento(tipo, nombre, permitir_historico=True)
+        for carpeta in (configuracion[2], configuracion[1]):
+            ruta = ruta_documento_segura(carpeta, nombre)
+            if os.path.isfile(ruta):
+                return send_from_directory(carpeta, nombre)
+    except ValueError:
+        return "Nombre de archivo no válido", 400
+    return "Archivo no encontrado", 404
 
 @app.route('/ver_factura/<nombre>')
 def ver_factura(nombre):
     rol = session.get('rol')
     if rol not in ['sistemas', 'contabilidad']:
         return "Acceso no autorizado", 403
+    try:
+        if not nombre.startswith('Factura_'):
+            raise ValueError('Nombre de factura no válido')
+        validar_nombre_documento('compras', nombre[len('Factura_'):], permitir_historico=True)
+        ruta_documento_segura(CARPETA_FACTURAS, nombre)
+    except ValueError:
+        return 'Nombre de factura no válido', 400
     return send_from_directory(CARPETA_FACTURAS, nombre, as_attachment=False)
 
 @app.route('/subir_factura', methods=['POST'])
@@ -530,14 +617,18 @@ def subir_factura():
     archivo_pdf = request.files['pdf']
     nombre_oc = request.form.get('nombre_oc', '')
     
-    if not nombre_oc or not nombre_oc.startswith('OC_'):
+    try:
+        validar_nombre_documento('compras', nombre_oc, permitir_historico=True)
+        if not documento_existe('compras', nombre_oc):
+            return jsonify({'success': False, 'message': 'Orden de compra no encontrada'}), 404
+        factura_nombre = f"Factura_{nombre_oc}"
+        ruta_guardado = ruta_documento_segura(CARPETA_FACTURAS, factura_nombre)
+    except ValueError:
         return jsonify({'success': False, 'message': 'Referencia de orden de compra no válida'}), 400
         
     if archivo_pdf.filename == '':
         return jsonify({'success': False, 'message': 'Archivo vacío'}), 400
         
-    factura_nombre = f"Factura_{nombre_oc}"
-    ruta_guardado = os.path.join(CARPETA_FACTURAS, factura_nombre)
     
     try:
         archivo_pdf.save(ruta_guardado)
@@ -564,17 +655,25 @@ def vincular_oc():
         return jsonify({'success': False, 'message': 'Acceso no autorizado'}), 403
         
     data = request.json or {}
+    if not isinstance(data, dict):
+        return jsonify({'success': False, 'message': 'Datos no válidos'}), 400
     nombre_op = data.get('nombre_op', '')
-    nombre_oc = data.get('nombre_oc', '').strip()
-    
-    if not nombre_op or not nombre_op.startswith('OP_'):
-        return jsonify({'success': False, 'message': 'Referencia de orden de pago no válida'}), 400
-        
-    json_nombre = nombre_op.replace('.pdf', '.json')
-    ruta_json = os.path.join(CARPETA_PAGOS_EDITADAS, json_nombre)
-    if not os.path.exists(ruta_json):
-        ruta_json = os.path.join(CARPETA_PAGOS, json_nombre)
-        
+    nombre_oc = data.get('nombre_oc', '')
+    if not isinstance(nombre_oc, str):
+        return jsonify({'success': False, 'message': 'Referencia de orden de compra no válida'}), 400
+    nombre_oc = nombre_oc.strip()
+    try:
+        validar_nombre_documento('pagos', nombre_op, permitir_historico=True)
+        if not documento_existe('pagos', nombre_op):
+            return jsonify({'success': False, 'message': 'Orden de pago no encontrada'}), 404
+        if nombre_oc:
+            validar_nombre_documento('compras', nombre_oc, permitir_historico=True)
+            if not documento_existe('compras', nombre_oc):
+                return jsonify({'success': False, 'message': 'Orden de compra no encontrada'}), 404
+        ruta_json = ruta_metadatos_documento('pagos', nombre_op)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Referencia de documento no válida'}), 400
+
     if not os.path.exists(ruta_json):
         return jsonify({'success': False, 'message': 'No se encontraron metadatos para esta orden de pago'}), 404
         
@@ -596,42 +695,15 @@ def vincular_oc():
 
 @app.route('/get_metadata/<tipo>/<nombre>')
 def get_metadata(tipo, nombre):
-    json_nombre = nombre.replace('.pdf', '.json')
-    rol = session.get('rol', 'sistemas')
-    
-    if tipo == 'compras' and rol == 'sistemas':
-        ruta_editada = os.path.join(CARPETA_COMPRAS_EDITADAS, json_nombre)
-        if os.path.exists(ruta_editada):
-            ruta = ruta_editada
-        else:
-            ruta = os.path.join(CARPETA_COMPRAS, json_nombre)
-    elif tipo == 'bajas' and rol == 'sistemas':
-        ruta_editada = os.path.join(CARPETA_BAJAS_EDITADAS, json_nombre)
-        if os.path.exists(ruta_editada):
-            ruta = ruta_editada
-        else:
-            ruta = os.path.join(CARPETA_BAJAS, json_nombre)
-    elif tipo == 'pagos' and rol == 'contabilidad':
-        ruta_editada = os.path.join(CARPETA_PAGOS_EDITADAS, json_nombre)
-        if os.path.exists(ruta_editada):
-            ruta = ruta_editada
-        else:
-            ruta = os.path.join(CARPETA_PAGOS, json_nombre)
-    elif tipo == 'servicios' and rol == 'marketing':
-        ruta_editada = os.path.join(CARPETA_SERVICIOS_EDITADAS, json_nombre)
-        if os.path.exists(ruta_editada):
-            ruta = ruta_editada
-        else:
-            ruta = os.path.join(CARPETA_SERVICIOS, json_nombre)
-    elif tipo == 'mantenimiento' and rol == 'mantenimiento':
-        ruta_editada = os.path.join(CARPETA_MANTENIMIENTO_EDITADAS, json_nombre)
-        if os.path.exists(ruta_editada):
-            ruta = ruta_editada
-        else:
-            ruta = os.path.join(CARPETA_MANTENIMIENTO, json_nombre)
-    else:
-        return jsonify({'success': False, 'message': 'Tipo no válido o acceso no autorizado'}), 400
-    
+    configuracion = configuracion_documento(tipo)
+    if not configuracion or session.get('rol') != configuracion[0]:
+        return jsonify({'success': False, 'message': 'Tipo no válido o acceso no autorizado'}), 403
+    try:
+        validar_nombre_documento(tipo, nombre, permitir_historico=True)
+        ruta = ruta_metadatos_documento(tipo, nombre)
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Nombre de documento no válido'}), 400
+
     if os.path.exists(ruta):
         try:
             with open(ruta, 'r', encoding='utf-8') as f:
@@ -652,42 +724,26 @@ def guardar_pdf():
     edit_mode = request.form.get('edit_mode', 'false') == 'true'
     metadata_json = request.form.get('metadata', '')
 
-    if nombre_archivo == '':
-        return jsonify({'success': False, 'message': 'Nombre de archivo vacío'})
+    tipos_por_prefijo = {'OC_': 'compras', 'BAJA_': 'bajas', 'OP_': 'pagos', 'OS_': 'servicios', 'OCM_': 'mantenimiento'}
+    tipo = next((tipo for prefijo, tipo in tipos_por_prefijo.items()
+                 if isinstance(nombre_archivo, str) and nombre_archivo.startswith(prefijo)), None)
+    configuracion = configuracion_documento(tipo)
+    if not configuracion:
+        return jsonify({'success': False, 'message': 'Tipo o nombre de documento no válido'}), 400
+    if session.get('rol') != configuracion[0]:
+        return jsonify({'success': False, 'message': 'Acceso no autorizado para este tipo de documento'}), 403
+    try:
+        validar_nombre_documento(tipo, nombre_archivo, permitir_historico=edit_mode)
+        if edit_mode and not documento_existe(tipo, nombre_archivo):
+            return jsonify({'success': False, 'message': 'Documento original no encontrado para editar'}), 404
+        carpeta = configuracion[2] if edit_mode else configuracion[1]
+        ruta_guardado = ruta_documento_segura(carpeta, nombre_archivo)
+        ruta_json = ruta_documento_segura(carpeta, nombre_archivo[:-4] + '.json')
+    except ValueError:
+        return jsonify({'success': False, 'message': 'Nombre o ruta de documento no válido'}), 400
+    if not edit_mode:
+        incrementar_numero(tipo)
 
-    if nombre_archivo.startswith('OC_'):
-        if edit_mode:
-            ruta_guardado = os.path.join(CARPETA_COMPRAS_EDITADAS, nombre_archivo)
-        else:
-            ruta_guardado = os.path.join(CARPETA_COMPRAS, nombre_archivo)
-            incrementar_numero('compras')
-    elif nombre_archivo.startswith('BAJA_'):
-        if edit_mode:
-            ruta_guardado = os.path.join(CARPETA_BAJAS_EDITADAS, nombre_archivo)
-        else:
-            ruta_guardado = os.path.join(CARPETA_BAJAS, nombre_archivo)
-            incrementar_numero('bajas')
-    elif nombre_archivo.startswith('OP_'):
-        if edit_mode:
-            ruta_guardado = os.path.join(CARPETA_PAGOS_EDITADAS, nombre_archivo)
-        else:
-            ruta_guardado = os.path.join(CARPETA_PAGOS, nombre_archivo)
-            incrementar_numero('pagos')
-    elif nombre_archivo.startswith('OS_'):
-        if edit_mode:
-            ruta_guardado = os.path.join(CARPETA_SERVICIOS_EDITADAS, nombre_archivo)
-        else:
-            ruta_guardado = os.path.join(CARPETA_SERVICIOS, nombre_archivo)
-            incrementar_numero('servicios')
-    elif nombre_archivo.startswith('OCM_'):
-        if edit_mode:
-            ruta_guardado = os.path.join(CARPETA_MANTENIMIENTO_EDITADAS, nombre_archivo)
-        else:
-            ruta_guardado = os.path.join(CARPETA_MANTENIMIENTO, nombre_archivo)
-            incrementar_numero('mantenimiento')
-    else:
-        ruta_guardado = os.path.join(CARPETA_HISTORIAL, nombre_archivo)
-    
     # Evitar sobreescrituras accidentales al crear un nuevo documento
     if not edit_mode and os.path.exists(ruta_guardado):
         return jsonify({
@@ -700,7 +756,6 @@ def guardar_pdf():
 
     # Guardar JSON de Metadatos
     if metadata_json:
-        ruta_json = ruta_guardado.replace('.pdf', '.json')
         try:
             metadata_dict = json.loads(metadata_json)
             with open(ruta_json, 'w', encoding='utf-8') as f:
