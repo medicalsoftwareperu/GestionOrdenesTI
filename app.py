@@ -462,9 +462,42 @@ def guardar_archivo_recuperable(destino, contenido):
             shutil.rmtree(temporal, ignore_errors=True)
 
 
+def corregir_indice_bajas():
+    # Reparar una sola vez las bajas ya guardadas, usando sus metadatos correctos.
+    conn = get_db_connection()
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        migracion = 'corregir_busqueda_bajas_v1'
+        if conn.execute('SELECT 1 FROM migraciones_sistema WHERE id = ?', (migracion,)).fetchone():
+            return
+        for nombre in os.listdir(CARPETA_BAJAS):
+            if not nombre.endswith('.pdf'):
+                continue
+            try:
+                validar_nombre_documento('bajas', nombre, permitir_historico=True)
+                with open(ruta_metadatos_documento('bajas', nombre), encoding='utf-8') as archivo:
+                    datos = json.load(archivo)
+                texto = ' '.join(str(item.get(campo) or '')
+                    for item in datos['items'] for campo in ('desc', 'marca', 'modelo')).lower()
+            except (OSError, ValueError, KeyError, TypeError, AttributeError):
+                continue
+            conn.execute('DELETE FROM items_pdf WHERE nombre_archivo = ?', (nombre,))
+            if texto.strip():
+                conn.execute('INSERT INTO items_pdf (nombre_archivo, contenido) VALUES (?, ?)', (nombre, texto))
+        conn.execute('INSERT INTO migraciones_sistema (id, fecha) VALUES (?, ?)',
+                     (migracion, datetime.now().isoformat()))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 # Recuperar una operación interrumpida por un reinicio antes de atender usuarios.
 with bloqueo_documentos():
     recuperar_guardados_pendientes()
+    try:
+        corregir_indice_bajas()
+    except (sqlite3.Error, OSError):
+        app.logger.exception('No se pudo actualizar el índice de bajas al iniciar')
 
 # Ejecutar sincronización al inicio
 try:

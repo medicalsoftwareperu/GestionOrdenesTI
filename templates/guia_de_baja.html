@@ -297,11 +297,11 @@
     const items = [];
     document.querySelectorAll('#items-body tr').forEach(tr => {
       const inputs = tr.querySelectorAll('input');
-      if (inputs.length >= 5) {
+      if (inputs.length >= 6) {
         items.push({
-          desc: inputs[2].value, // inputs[2] is description in this table row
-          marca: inputs[5].value, // inputs[5] is brand
-          modelo: inputs[4].value // inputs[4] is model
+          desc: inputs[1].value,
+          marca: inputs[4].value,
+          modelo: inputs[3].value
         });
       }
     });
