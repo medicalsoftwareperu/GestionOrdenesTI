@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Orden de Compra - Medical</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.2">
-<script src="{{ url_for('static', filename='documentos.js') }}?v=20260930-2"></script>
+<script src="{{ url_for('static', filename='documentos.js') }}?v=20261001-1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -223,6 +223,7 @@
 <script>
   const EDIT_MODE = {{ 'true' if edit_mode else 'false' }};
   const EDIT_FILENAME = "{{ edit_filename }}";
+  configurarEdicionDocumento(EDIT_MODE);
 
   // ── Set today's dates ──
   if (!EDIT_MODE) {
@@ -254,14 +255,20 @@
         if (EDIT_MODE) {
           cargarMetadatosDeEdicion();
         }
+      }).catch(error => {
+        if (EDIT_MODE) {
+          console.error(error);
+          alert("No se pudieron cargar los datos para editar. Recarga la página antes de guardar. El documento original sigue intacto.");
+        }
       });
   });
 
   async function cargarMetadatosDeEdicion() {
+    iniciarCargaEdicionDocumento();
     try {
       const res = await fetchSeguro(`/get_metadata/compras/${EDIT_FILENAME}`);
       const result = await res.json();
-      if (result.success) {
+      if (datosEdicionValidos(res, result)) {
         const data = result.data;
         
         // Cargar campos básicos
@@ -330,12 +337,13 @@
           initialItems.forEach(addRow);
         }
         recalc();
+        completarCargaEdicionDocumento();
       } else {
-        alert("⚠️ No se pudieron cargar los metadatos para editar este archivo: " + result.message);
+        alert("No se pudieron cargar los datos originales. Recarga la página antes de guardar. El documento original sigue intacto.");
       }
     } catch (e) {
       console.error(e);
-      alert("❌ Error al conectar con el servidor para obtener los datos de edición.");
+      alert("No se completó la carga de los datos originales. Recarga la página antes de guardar. El documento original sigue intacto.");
     }
   }
 

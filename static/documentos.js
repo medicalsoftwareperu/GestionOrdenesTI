@@ -2,6 +2,37 @@
 let guardadoEnCurso = false;
 let documentoNuevoGuardado = false;
 const reservasPendientes = new Map();
+let edicionRequiereCarga = false;
+let datosEdicionCargados = false;
+
+function actualizarBotonesGuardado() {
+  document.querySelectorAll('button[onclick="guardarEnHistorial()"]')
+    .forEach(boton => { boton.disabled = guardadoEnCurso || (edicionRequiereCarga && !datosEdicionCargados); });
+}
+
+function configurarEdicionDocumento(editMode) {
+  edicionRequiereCarga = Boolean(editMode);
+  datosEdicionCargados = false;
+  actualizarBotonesGuardado();
+}
+
+function iniciarCargaEdicionDocumento() {
+  datosEdicionCargados = false;
+  actualizarBotonesGuardado();
+}
+
+function completarCargaEdicionDocumento() {
+  datosEdicionCargados = true;
+  actualizarBotonesGuardado();
+}
+
+function datosEdicionValidos(respuesta, resultado) {
+  const datos = resultado?.data;
+  return respuesta.ok && resultado?.success === true && datos !== null &&
+    typeof datos === 'object' && !Array.isArray(datos) &&
+    (datos.items === undefined || (Array.isArray(datos.items) &&
+      datos.items.every(item => item !== null && typeof item === 'object' && !Array.isArray(item))));
+}
 
 function escaparTextoHTML(valor) {
   return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
@@ -10,14 +41,17 @@ function escaparTextoHTML(valor) {
 }
 
 function iniciarGuardadoDocumento(editMode) {
+  if (editMode && !datosEdicionCargados) {
+    alert('No se cargaron completamente los datos originales. Recarga la página antes de guardar. El documento original sigue intacto.');
+    return false;
+  }
   if (guardadoEnCurso) return false;
   if (!editMode && documentoNuevoGuardado) {
     alert('Ya guardaste este documento. Recarga la página para crear uno nuevo.');
     return false;
   }
   guardadoEnCurso = true;
-  document.querySelectorAll('button[onclick="guardarEnHistorial()"]')
-    .forEach(boton => { boton.disabled = true; });
+  actualizarBotonesGuardado();
   return true;
 }
 
@@ -25,8 +59,7 @@ function finalizarGuardadoDocumento(exito, editMode) {
   guardadoEnCurso = false;
   if (exito && !editMode) documentoNuevoGuardado = true;
   if (exito) reservasPendientes.clear();
-  document.querySelectorAll('button[onclick="guardarEnHistorial()"]')
-    .forEach(boton => { boton.disabled = false; });
+  actualizarBotonesGuardado();
 }
 
 async function reservarNumeroDocumento(tipo, nombre, editMode) {

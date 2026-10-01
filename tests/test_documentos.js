@@ -34,6 +34,7 @@ test('el éxito evita duplicar una creación y permite continuar editando', () =
   const {context:c, alerts} = fixture();
   c.iniciarGuardadoDocumento(false);c.finalizarGuardadoDocumento(true, false);
   assert.equal(c.iniciarGuardadoDocumento(false), false);assert.equal(alerts.length, 1);
+  c.configurarEdicionDocumento(true);c.completarCargaEdicionDocumento();
   assert.equal(c.iniciarGuardadoDocumento(true), true);
 });
 test('el reintento reutiliza la reserva tanto con el nombre propuesto como con el asignado', async () => {
