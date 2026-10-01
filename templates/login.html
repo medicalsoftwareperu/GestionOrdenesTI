@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script src="{{ url_for('static', filename='seguridad.js') }}?v=20260930-1"></script>
     <script>document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') || 'light');</script>
-    <title>Acceso al Sistema - Medical TI</title>
+    <title>Acceso al Sistema - Grupo Medical</title>
     <link href="{{ url_for('static', filename='login.css') }}?v=20261001-1" rel="stylesheet">
 </head>
 <body>
@@ -15,8 +15,8 @@
             <section class="login-brand" aria-labelledby="login-title">
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical" class="login-logo">
                 <p class="login-eyebrow">GRUPO MEDICAL · PORTAL INTERNO</p>
-                <h1 id="login-title">Gestión de <span>Órdenes TI.</span></h1>
-                <p class="login-description">Accede al sistema de órdenes y documentos de tu área.</p>
+                <h1 id="login-title">Gestión de <span>órdenes.</span></h1>
+                <p class="login-description">Un espacio para las órdenes y documentos de todas las áreas.</p>
                 <div class="login-network" aria-hidden="true"><svg viewBox="0 0 440 280" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <defs><pattern id="ti-grid" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="currentColor" opacity=".17"/></pattern></defs>
                     <rect width="440" height="280" fill="url(#ti-grid)"/>
@@ -49,7 +49,7 @@
                 <p class="login-form-note"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="2"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>Uso interno · Grupo Medical</p>
             </section>
         </div>
-        <footer class="login-footer"><span>© 2026 Medical S.A. · Todos los derechos reservados.</span><span>Tecnología de la Información</span></footer>
+        <footer class="login-footer"><span>© 2026 Medical S.A. · Todos los derechos reservados.</span><span>Portal interno de gestión</span></footer>
     </main>
 </body>
 </html>
