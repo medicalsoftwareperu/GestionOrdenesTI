@@ -115,3 +115,8 @@
  body.compra-page>#oc-doc .data-grid:has(#razon-social)>.data-cell:nth-child(3),
  body.compra-page>#oc-doc .data-grid:has(#razon-social)>.data-cell:nth-child(4) { grid-column:span 2; }
 }
+
+@media screen and (min-width:651px) {
+ body.compra-page>#oc-doc .data-cell:has(>#ruc) { flex-direction:row; align-items:center; gap:10px!important; }
+ body.compra-page>#oc-doc .data-cell:has(>#ruc) .field { flex:1; }
+}
