@@ -1,0 +1,14 @@
+<header class="ti-view-header">
+    <a href="{{ url_for('index') }}" class="ti-view-brand" aria-label="Grupo Medical, volver al panel">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical">
+        <span><strong>Tecnología de la Información</strong><small>Portal interno de gestión</small></span>
+    </a>
+    <div class="ti-view-navigation">
+        <nav aria-label="Navegación de TI">
+            <a href="{{ url_for('index') }}">Panel</a>
+            <a href="{{ url_for('historial') }}" {% if pagina_ti == 'historial' %}class="active" aria-current="page"{% endif %}>Historial</a>
+            <a href="{{ url_for('auditoria') }}" {% if pagina_ti == 'auditoria' %}class="active" aria-current="page"{% endif %}>Auditoría</a>
+        </nav>
+        <span class="ti-view-account"><span aria-hidden="true">TI</span>{{ session['usuario'] }}</span>
+    </div>
+</header>

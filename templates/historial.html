@@ -178,20 +178,34 @@
             font-weight: bold;
         }
     </style>
+{% if session['rol'] == 'sistemas' %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vistas-ti.css') }}?v=20261001-1">
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');</script>
+{% endif %}
 </head>
-<body>
+<body{% if session['rol'] == 'sistemas' %} class="ti-workspace"{% endif %}>
 
+{% if session['rol'] == 'sistemas' %}
+{% set pagina_ti = 'historial' %}
+{% include 'encabezado_ti.html' %}
+<div class="ti-page-heading">
+    <div><p class="ti-view-eyebrow">GRUPO MEDICAL · SISTEMAS</p><h1>Historial de documentos</h1><p class="ti-view-description">Consulta tus compras y bajas, edita documentos y gestiona sus facturas.</p></div>
+    <a href="{{ url_for('index') }}" class="btn btn-outline">Volver al panel</a>
+</div>
+{% else %}
 <div class="toolbar">
     <h1>🗄️ Historial de Documentos</h1>
     <button class="btn btn-outline" onclick="window.location.href='/'">🏠 Volver al Inicio</button>
 </div>
+{% endif %}
 
 <div class="buscador-container" style="display: flex; gap: 15px; margin-top: 20px;">
     {% if session['rol'] == 'sistemas' %}
-        <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por nombre de equipo, marca, modelo o fecha (ej. 'disco', 'lenovo', '2026')..." onkeyup="filtrarHistorial()">
-        <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
-            <option value="">🏢 Todos los Proveedores</option>
-        </select>
+        <div class="ti-filter-search"><label for="buscador">Equipo, marca, modelo o fecha</label>
+        <input type="text" id="buscador" class="input-buscador" placeholder="Buscar en tus documentos…" onkeyup="filtrarHistorial()"></div>
+        <div class="ti-filter-provider"><label for="filtro-proveedor">Proveedor</label>
+        <select id="filtro-proveedor" class="input-buscador" onchange="filtrarHistorial()"><option value="">Todos los Proveedores</option></select></div>
     {% elif session['rol'] == 'marketing' %}
         <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por servicio o fecha (ej. 'publicidad', '2026')..." onkeyup="filtrarHistorial()">
         <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
