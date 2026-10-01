@@ -1145,8 +1145,9 @@ def guardar_pdf():
         # El diario persiste antes de publicar archivos; permite recuperar un reinicio abrupto.
         conn.execute('INSERT INTO guardados_pendientes (id, plan) VALUES (?, ?)',
                      (operacion, json.dumps(plan)))
-        conn.commit()
+        # Conservar respaldos incluso si el proceso se interrumpe durante el commit.
         registrado = True
+        conn.commit()
         conn.execute('BEGIN IMMEDIATE')
         for archivo in archivos:
             os.replace(archivo['preparado'], archivo['destino'])

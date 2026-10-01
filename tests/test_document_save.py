@@ -100,6 +100,51 @@ class DocumentSaveTests(unittest.TestCase):
         self.assertEqual(before,self.storage_state())
         self.assertEqual(self.db('SELECT COUNT(*) FROM items_pdf'),[(0,)])
 
+    def test_restart_during_journal_commit_preserves_recovery_files(self):
+        self.login('sistemas')
+        for edit in [False, True]:
+            with self.subTest(edit=edit):
+                if edit:
+                    self.assertTrue(self.save().json['success'])
+                    self.assertTrue(self.save(edit=True).json['success'])
+                before = self.storage_state()
+                real_get = self.module.get_db_connection
+                interrupted = False
+
+                class Connection:
+                    def __init__(inner):
+                        inner.conn = real_get()
+                        inner.journal = False
+                    def execute(inner, sql, args=()):
+                        if sql.startswith('INSERT INTO guardados_pendientes'):
+                            inner.journal = True
+                        return inner.conn.execute(sql, args)
+                    def commit(inner):
+                        nonlocal interrupted
+                        inner.conn.commit()
+                        if inner.journal and not interrupted:
+                            interrupted = True
+                            raise KeyboardInterrupt('restart during journal commit')
+                    def rollback(inner): return inner.conn.rollback()
+                    def close(inner): return inner.conn.close()
+
+                with patch.object(self.module, 'get_db_connection', side_effect=Connection):
+                    with self.assertRaises(KeyboardInterrupt):
+                        self.save(edit=edit, pdf=b'%PDF-1.4\ninterrupted')
+                plans = self.db('SELECT plan FROM guardados_pendientes')
+                self.assertEqual(len(plans), 1)
+                plan = json.loads(plans[0][0])
+                self.assertTrue(Path(plan['temporal']).is_dir())
+                for file in plan['archivos']:
+                    self.assertTrue(Path(file['preparado']).is_file())
+                    if file['respaldo']:
+                        self.assertTrue(Path(file['respaldo']).is_file())
+                spec = importlib.util.spec_from_file_location('restarted_journal_app', self.root / 'app.py')
+                restarted = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(restarted)
+                self.assertEqual(before, self.storage_state())
+                self.assertEqual(self.db('SELECT COUNT(*) FROM guardados_pendientes'), [(0,)])
+
     def test_restart_recovers_an_interrupted_edit(self):
         self.login('sistemas');name=self.names['compras'];self.save(name);self.save(name,edit=True)
         before=self.storage_state()
