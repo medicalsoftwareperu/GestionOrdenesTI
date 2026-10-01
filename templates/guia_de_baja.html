@@ -31,8 +31,22 @@
     margin-top: 50px;
   }
 </style>
+<link rel="stylesheet" href="{{ url_for('static', filename='guia-baja.css') }}?v=20261001-1">
 </head>
-<body>
+<body class="baja-page">
+<header class="baja-brand-header no-print">
+  <div class="baja-brand">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical">
+    <span><strong>Tecnología de la Información</strong><small>Portal interno de gestión</small></span>
+  </div>
+  <div class="baja-account"><span aria-hidden="true">TI</span>{{ session['usuario'] }}</div>
+</header>
+<div class="baja-intro no-print">
+  <p>GRUPO MEDICAL · CONTROL DE EQUIPOS</p>
+  <h1>Guía de baja</h1>
+  <span>Registra los equipos dados de baja y sus detalles de traslado.</span>
+  <svg viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="9" width="45" height="32" rx="4"/><path d="M8 33h45M30 41v9M20 50h20"/><rect x="54" y="26" width="17" height="28" rx="3"/><path d="M59 32h7M59 37h7M59 46h7M64 10l5 5-5 5M57 15h12"/></svg>
+</div>
 
 <div class="toolbar">
   <h1>Generador de Guía de Baja</h1>
@@ -156,7 +170,7 @@
   </div>
 </div>
 
-<div class="no-print" style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
+<div class="no-print baja-save" style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
   <button class="btn btn-success" style="background-color: #27ae60; font-size: 16px; padding: 12px 30px; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);" onclick="guardarEnHistorial()">
     Guardar Guía en el Historial
   </button>
