@@ -5,16 +5,18 @@
 <script src="{{ url_for('static', filename='seguridad.js') }}?v=20260930-1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión TI - Medical</title>
+    <title>{% if session['rol'] == 'contabilidad' %}Panel de Contabilidad - Medical{% else %}Sistema de Gestión TI - Medical{% endif %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-{% if puede_ver_auditoria %}
+{% if puede_ver_auditoria or session['rol'] == 'contabilidad' %}
     <link href="{{ url_for('static', filename='panel-ti.css') }}?v=20260930-2" rel="stylesheet">
     <script>document.documentElement.setAttribute('data-bs-theme', localStorage.getItem('theme') || 'light');</script>
 {% endif %}
 </head>
-<body{% if puede_ver_auditoria %} class="ti-panel"{% endif %}>
+<body{% if puede_ver_auditoria or session['rol'] == 'contabilidad' %} class="ti-panel"{% endif %}>
 {% if puede_ver_auditoria %}
 {% include "panel_ti.html" %}
+{% elif session['rol'] == 'contabilidad' %}
+{% include "panel_contabilidad.html" %}
 {% else %}
 
 <div class="container mt-5">

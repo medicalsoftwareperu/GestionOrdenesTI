@@ -1,0 +1,58 @@
+{% macro icono(tipo) -%}
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+{% if tipo == 'compras' %}<path d="M8 3H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-3"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M8 11h8M8 15h5"/>
+{% elif tipo == 'bajas' %}<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 21h8M12 16v5M8 10h8"/>
+{% elif tipo == 'historial' %}<path d="M3 8V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 10h18M8 15h8"/>
+{% else %}<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/>{% endif %}
+</svg>
+{%- endmacro %}
+<div class="ti-shell">
+    <header class="ti-header">
+        <div class="ti-brand">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical" class="ti-logo">
+            <span class="ti-brand-divider" aria-hidden="true"></span>
+            <div class="ti-brand-label"><strong>Contabilidad</strong><span>Portal interno de gestión</span></div>
+        </div>
+        <div class="ti-session">
+            <span class="ti-account"><span class="ti-avatar" aria-hidden="true">CO</span>{{ session['usuario'] }}</span>
+            <button id="btn-theme-toggle" class="ti-theme" onclick="toggleGlobalTheme()" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
+            <a href="/logout" class="ti-logout">Cerrar Sesión <span aria-hidden="true">↗</span></a>
+        </div>
+    </header>
+    <main class="ti-main">
+        <section class="ti-hero" aria-labelledby="ti-title">
+            <div class="ti-intro">
+                <p class="ti-eyebrow"><span aria-hidden="true"></span> GRUPO MEDICAL · CONTABILIDAD</p>
+                <h1 id="ti-title">Gestión de pagos<span>para Contabilidad.</span></h1>
+                <p class="ti-subtitle">Genera órdenes de pago para tus proveedores.<br>Consulta y descarga los documentos de tu área.</p>
+                <div class="ti-topics"><span>Pagos</span><span>Proveedores</span><span>Comprobantes</span></div>
+            </div>
+            <div class="ti-illustration" aria-hidden="true">
+                <svg viewBox="0 0 440 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs><pattern id="conta-grid" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="currentColor" opacity=".17"/></pattern></defs><rect width="440" height="280" fill="url(#conta-grid)"/>
+<g stroke="currentColor" opacity=".18"><path d="m220 23 105 61v122l-105 61-105-61V84Z"/><path d="m220 53 79 46v92l-79 46-79-46V99Z"/></g>
+<g stroke="currentColor" stroke-width="1.5" opacity=".4"><path d="M170 140H88V78M270 140h75v62M220 92V58h105M220 192v39H112"/><circle cx="88" cy="78" r="4"/><circle cx="345" cy="202" r="4"/><circle cx="325" cy="58" r="4"/><circle cx="112" cy="231" r="4"/></g>
+<g class="ti-hex" stroke-width="1.5"><path d="M186 91h50l20 20v80l-9-5-9 5-9-5-9 5-9-5-9 5-16-7Z"/><path d="M236 91v20h20"/></g>
+<g class="ti-server" stroke-width="1.7" stroke-linecap="round"><path d="M199 123h24M199 137h43M199 150h43M199 172h20"/><path d="m230 170 5 5 10-12"/></g>
+<g class="ti-device" stroke-width="1.5"><rect x="62" y="29" width="51" height="45" rx="6"/><path d="M70 41h35M72 53h9M89 53h13M72 63h30"/><rect x="319" y="202" width="53" height="57" rx="6"/><rect x="327" y="211" width="37" height="11" rx="2"/><path d="M329 234h4M343 234h4M357 234h4M329 246h4M343 246h4M357 246h4"/><circle cx="329" cy="35" r="15"/><path d="m321 35 6 6 11-13"/><path d="M84 202h42v24H84Z"/><path d="M92 211h26M92 218h15"/></g>
+</svg>
+            </div>
+        </section>
+        <div class="ti-section-heading"><h2>¿Qué necesitas gestionar?</h2><span>Accesos del área</span></div>
+        <div class="ti-grid">
+            <a href="/pagos" class="ti-card ti-card-primary">
+                <div class="ti-card-top"><span class="ti-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h10l4 4v14l-3-2-3 2-3-2-5 2Z"/><path d="M15 3v5h4M9 11h6M9 15h4"/></svg></span><span class="ti-card-category">PAGOS A PROVEEDORES</span></div>
+                <h2>Orden de Pago</h2>
+                <p>Genera una nueva orden de pago con el formato contable habitual.</p>
+                <span class="ti-card-action">Crear Orden <span aria-hidden="true">↗</span></span>
+            </a>
+            <a href="/historial" class="ti-card">
+                <div class="ti-card-top"><span class="ti-icon">{{ icono('historial') }}</span><span class="ti-card-category">DOCUMENTOS</span></div>
+                <h2>Historial</h2>
+                <p>Revisa las órdenes generadas y descarga tus documentos.</p>
+                <span class="ti-card-action">Ver Archivos <span aria-hidden="true">↗</span></span>
+            </a>
+        </div>
+        <footer class="ti-footer"><span>Grupo Medical</span><span>Contabilidad · Gestión interna</span></footer>
+    </main>
+</div>
