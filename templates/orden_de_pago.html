@@ -182,7 +182,10 @@
       <span class="lbl">RUC / DNI</span>
     </div>
     <div class="data-cell span-3">
-      <input class="field" id="prov-ruc" placeholder="RUC o DNI proveedor" style="font-weight: bold;">
+      <div style="position: relative; width: 100%;">
+        <input class="field" id="prov-ruc" placeholder="RUC o DNI proveedor" autocomplete="off" style="font-weight: bold;">
+        <div id="ruc-dropdown" class="custom-dropdown no-print" style="left: 0; width: 100%;"></div>
+      </div>
     </div>
 
     <!-- FILA 4: BANCO -->
@@ -404,38 +407,49 @@
     }
   }
 
-  // Autocompletado de Proveedor
+  // Ambos campos consultan la misma lista de proveedores del área.
+  const inputRucProv = document.getElementById('prov-ruc');
+  const dropdownRucProv = document.getElementById('ruc-dropdown');
+
+  function seleccionarProveedor(p) {
+    inputProv.value = p.nombre;
+    inputRucProv.value = p.ruc || '';
+    document.getElementById('prov-banco').value = p.banco || 'BCP';
+    document.getElementById('prov-contacto-nombre').value = p.contacto_nombre || p.nombre;
+    document.getElementById('prov-cta-soles').value = p.cuenta_soles || '';
+    dropdownMenu.style.display = 'none';
+    dropdownRucProv.style.display = 'none';
+  }
+
+  function mostrarProveedores(input, menu, porRuc) {
+    const val = input.value.trim().toLowerCase();
+    dropdownMenu.style.display = 'none';
+    dropdownRucProv.style.display = 'none';
+    menu.innerHTML = '';
+    if (!val) return;
+
+    const filtrados = listaProveedores.filter(p =>
+      String((porRuc ? p.ruc : p.nombre) || '').toLowerCase().includes(val)
+    );
+    if (!filtrados.length) return;
+    filtrados.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'dropdown-item';
+      item.textContent = porRuc ? `${p.ruc} · ${p.nombre}` : p.nombre;
+      item.onclick = () => seleccionarProveedor(p);
+      menu.appendChild(item);
+    });
+    menu.style.display = 'block';
+  }
+
   inputProv.addEventListener('input', function() {
-    const val = this.value.toLowerCase();
-    dropdownMenu.innerHTML = '';
-    
-    if (!val) {
-      dropdownMenu.style.display = 'none';
-      return;
-    }
-
-    const filtrados = listaProveedores.filter(p => p.nombre.toLowerCase().includes(val));
-
-    if (filtrados.length > 0) {
-      dropdownMenu.style.display = 'block';
-      filtrados.forEach(p => {
-        const item = document.createElement('div');
-        item.className = 'dropdown-item';
-        item.textContent = p.nombre;
-        
-        item.onclick = () => {
-          inputProv.value = p.nombre;
-          document.getElementById('prov-ruc').value = p.ruc;
-          document.getElementById('prov-banco').value = p.banco || 'BCP';
-          document.getElementById('prov-contacto-nombre').value = p.contacto_nombre || p.nombre;
-          document.getElementById('prov-cta-soles').value = p.cuenta_soles || '';
-          dropdownMenu.style.display = 'none';
-        };
-        dropdownMenu.appendChild(item);
-      });
-    } else {
-      dropdownMenu.style.display = 'none';
-    }
+    mostrarProveedores(this, dropdownMenu, false);
+  });
+  inputRucProv.addEventListener('input', function() {
+    mostrarProveedores(this, dropdownRucProv, true);
+  });
+  inputRucProv.addEventListener('focus', function() {
+    mostrarProveedores(this, dropdownRucProv, true);
   });
 
   // Autocompletado de Mis Empresas (Razón Social Emisor)
@@ -494,6 +508,9 @@
   document.addEventListener('click', function(e) {
     if (e.target !== inputProv) {
       dropdownMenu.style.display = 'none';
+    }
+    if (e.target !== inputRucProv) {
+      dropdownRucProv.style.display = 'none';
     }
     if (e.target !== inputEmpresa) {
       dropdownEmpresa.style.display = 'none';
