@@ -1,0 +1,59 @@
+{% if session['rol'] == 'marketing' %}
+{% set area='Marketing' %}{% set sigla='MK' %}{% set gestion='servicios' %}{% set titulo='Orden de Servicio' %}{% set destino='/servicios' %}{% set categoria='SERVICIOS DE MARKETING' %}{% set detalle='Coordina servicios, campañas y materiales para tu área.' %}
+{% else %}
+{% set area='Mantenimiento' %}{% set sigla='MT' %}{% set gestion='compras' %}{% set titulo='Orden de Compra' %}{% set destino='/mantenimiento' %}{% set categoria='COMPRAS DE MANTENIMIENTO' %}{% set detalle='Gestiona equipos, repuestos y suministros para tu área.' %}
+{% endif %}
+<div class="ti-shell">
+    <header class="ti-header">
+        <div class="ti-brand">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical" class="ti-logo">
+            <span class="ti-brand-divider" aria-hidden="true"></span>
+            <div class="ti-brand-label"><strong>{{ area }}</strong><span>Portal interno de gestión</span></div>
+        </div>
+        <div class="ti-session">
+            <span class="ti-account"><span class="ti-avatar" aria-hidden="true">{{ sigla }}</span>{{ session['usuario'] }}</span>
+            <button id="btn-theme-toggle" class="ti-theme" onclick="toggleGlobalTheme()" aria-label="Cambiar tema" title="Cambiar tema">🌙</button>
+            <a href="/logout" class="ti-logout">Cerrar Sesión <span aria-hidden="true">↗</span></a>
+        </div>
+    </header>
+    <main class="ti-main">
+        <section class="ti-hero" aria-labelledby="ti-title">
+            <div class="ti-intro">
+                <p class="ti-eyebrow"><span aria-hidden="true"></span> GRUPO MEDICAL · {{ area|upper }}</p>
+                <h1 id="ti-title">Gestión de {{ gestion }}<span>para {{ area }}.</span></h1>
+                <p class="ti-subtitle">{{ detalle }}<br>Consulta y descarga los documentos de tu área.</p>
+                <div class="ti-topics"><span>{{ gestion|capitalize }}</span><span>Proveedores</span><span>Documentos</span></div>
+            </div>
+            <div class="ti-illustration" aria-hidden="true">
+                <svg viewBox="0 0 440 280" fill="none" aria-hidden="true">
+<defs><pattern id="area-grid" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="currentColor" opacity=".14"/></pattern></defs><rect width="440" height="280" fill="url(#area-grid)"/>
+<g stroke="currentColor" opacity=".18"><path d="m220 23 105 61v122l-105 61-105-61V84Z"/><path d="m220 53 79 46v92l-79 46-79-46V99Z"/></g>
+<g stroke="currentColor" stroke-width="1.5" opacity=".35"><path d="M155 140H88V78M285 140h60v62M220 85V58h105M220 195v36H112"/><circle cx="88" cy="78" r="4"/><circle cx="345" cy="202" r="4"/></g>
+{% if session['rol'] == 'marketing' %}
+<g class="ti-hex" stroke-width="1.7"><path d="m168 120 91-28v91l-91-28Z"/><path d="M168 120h-15v35h15M181 159l8 35h21l-10-29M259 117l16-5M264 138h22M259 161l16 6"/></g>
+<g class="ti-device" stroke-width="1.5"><rect x="65" y="32" width="48" height="36" rx="5"/><path d="m75 59 10-11 8 6 10-14"/><rect x="318" y="202" width="58" height="48" rx="5"/><path d="M328 238v-10M340 238v-18M352 238v-26M326 241h40"/></g>
+{% else %}
+<g class="ti-hex" stroke-width="1.7"><path d="M229 94a28 28 0 0 0-34 35l-39 40a12 12 0 0 0 17 17l40-39a28 28 0 0 0 35-34l-18 18-20-20Z"/><circle cx="166" cy="178" r="3"/></g>
+<g class="ti-device" stroke-width="1.5"><rect x="66" y="32" width="49" height="37" rx="5"/><path d="M78 32v-7h25v7M66 47h49M87 44v7h7v-7"/><rect x="319" y="202" width="52" height="49" rx="5"/><path d="m330 217 5 5 8-10M331 238h28M350 217h10"/></g>
+{% endif %}
+</svg>
+            </div>
+        </section>
+        <div class="ti-section-heading"><h2>¿Qué necesitas gestionar?</h2><span>Accesos del área</span></div>
+        <div class="ti-grid">
+            <a href="{{ destino }}" class="ti-card ti-card-primary">
+                <div class="ti-card-top"><span class="ti-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h10l4 4v14l-3-2-3 2-3-2-5 2Z"/><path d="M15 3v5h4M9 11h6M9 15h4"/></svg></span><span class="ti-card-category">{{ categoria }}</span></div>
+                <h2>{{ titulo }}</h2>
+                <p>{{ detalle }}</p>
+                <span class="ti-card-action">Crear Orden <span aria-hidden="true">↗</span></span>
+            </a>
+            <a href="/historial" class="ti-card">
+                <div class="ti-card-top"><span class="ti-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 7V4h7l3 3h8v13H3ZM3 11h18M8 15h8"/></svg></span><span class="ti-card-category">DOCUMENTOS</span></div>
+                <h2>Historial</h2>
+                <p>Revisa las órdenes generadas y descarga tus documentos.</p>
+                <span class="ti-card-action">Ver Archivos <span aria-hidden="true">↗</span></span>
+            </a>
+        </div>
+        <footer class="ti-footer"><span>Grupo Medical</span><span>{{ area }} · Gestión interna</span></footer>
+    </main>
+</div>

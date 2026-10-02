@@ -182,8 +182,16 @@
     }
   }
 </style>
+<link rel="stylesheet" href="{{ url_for('static', filename='orden-compra.css') }}?v=20261001-2">
+<link rel="stylesheet" href="{{ url_for('static', filename='ordenes-areas.css') }}?v=20261002-1">
 </head>
-<body>
+<body class="compra-page marketing-page">
+<header class="compra-brand-header no-print">
+  <div class="compra-brand"><img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical"><span><strong>Marketing</strong><small>Portal interno de gestión</small></span></div>
+  <div class="compra-account"><span aria-hidden="true">MK</span>{{ session['usuario'] }}</div>
+</header>
+<div class="compra-intro no-print"><p>GRUPO MEDICAL · MARKETING</p><h1>Orden de servicio</h1><span>Coordina servicios y materiales para las actividades de Marketing.</span>
+<svg viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m15 25 44-14v39L15 36ZM15 25H8v11h7M24 38l5 17h12l-6-14M64 21l9-4M65 31h10M64 42l9 5"/></svg></div>
 
 <div class="toolbar">
   <h1>Generador de Orden de Servicio</h1>
@@ -354,7 +362,7 @@
 
 </div>
 
-<div class="no-print" style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
+<div class="no-print compra-save" style="width: 100%; display: flex; justify-content: center; margin-top: 30px; margin-bottom: 30px;">
   <button class="btn btn-success" style="background-color: #27ae60; font-size: 16px; padding: 12px 30px; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);" onclick="guardarEnHistorial()">
     Guardar Documento en el Historial
   </button>

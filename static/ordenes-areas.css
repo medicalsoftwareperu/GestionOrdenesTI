@@ -1,0 +1,11 @@
+/* Solo pantalla y documento original: no modifica el clon de html2pdf. */
+@media screen {
+ body.marketing-page>#oc-doc .items-table { min-width:650px; }
+ body.marketing-page>#oc-doc .items-table textarea { font-family:inherit; color:var(--compra-text); font-size:12px; }
+ body.marketing-page>#oc-doc .items-table textarea:focus { background:var(--compra-soft); }
+ body.marketing-page>#oc-doc #container-notas { border-color:var(--compra-border)!important; padding:16px 20px!important; }
+ body.marketing-page>#oc-doc #notas { border-color:var(--compra-border)!important; background:var(--compra-bg)!important; color:var(--compra-text); border-radius:6px!important; }
+ body.marketing-page>#oc-doc #contenedor-imagenes-galeria { border-color:var(--compra-border)!important; }
+ body.marketing-page>#oc-doc .no-print .btn { border:1px solid var(--compra-border); border-radius:6px; background:var(--compra-surface); color:var(--compra-text); font-family:inherit; }
+ body.marketing-page>#oc-doc .text-muted { color:var(--compra-muted); }
+}

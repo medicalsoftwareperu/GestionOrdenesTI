@@ -1,0 +1,4 @@
+.area-workspace .historial-container { grid-template-columns:minmax(0,1fr); }
+.area-workspace .columna-historial { grid-column:1 / -1!important; min-width:0; }
+.area-workspace .archivo-item { gap:22px; }
+.area-workspace .archivo-nombre { min-width:0; line-height:1.6; }
