@@ -203,11 +203,11 @@
 <div class="buscador-container" style="display: flex; gap: 15px; margin-top: 20px;">
     {% if session['rol'] == 'sistemas' %}
         <div class="ti-filter-search"><label for="buscador">Equipo, marca, modelo o fecha</label>
-        <input type="text" id="buscador" class="input-buscador" placeholder="Buscar en tus documentos…" onkeyup="filtrarHistorial()"></div>
+        <input type="text" id="buscador" class="input-buscador" placeholder="Buscar en tus documentos…" onkeyup="programarBusquedaHistorial()"></div>
         <div class="ti-filter-provider"><label for="filtro-proveedor">Proveedor</label>
         <select id="filtro-proveedor" class="input-buscador" onchange="filtrarHistorial()"><option value="">Todos los Proveedores</option></select></div>
     {% elif session['rol'] == 'marketing' %}
-        <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por servicio o fecha (ej. 'publicidad', '2026')..." onkeyup="filtrarHistorial()">
+        <input type="text" id="buscador" class="input-buscador" style="flex: 2; margin-top: 0;" placeholder="🔍 Buscar por servicio o fecha (ej. 'publicidad', '2026')..." onkeyup="programarBusquedaHistorial()">
         <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
             <option value="">🏢 Todos los Proveedores</option>
         </select>
@@ -398,24 +398,47 @@
             console.error("Error cargando empresas para filtro:", e);
         }
 
-        // Cargar mapeo de archivo -> proveedor
+        // Leer proveedor y emisor juntos, conservando prioridad de las ediciones.
         try {
-            const resMap = await fetchSeguro('/get_mapeo_proveedores?_=' + Date.now());
-            mapeoProveedores = await resMap.json();
+            const respuesta = await fetchSeguro('/get_mapeos_historial?_=' + Date.now());
+            if (!respuesta.ok) throw new Error('No se pudieron cargar los filtros');
+            const mapeos = await respuesta.json();
+            mapeoProveedores = mapeos.proveedores;
+            mapeoEmisores = mapeos.emisores;
+            filtrarHistorial();
         } catch (e) {
-            console.error("Error cargando mapeo de proveedores:", e);
-        }
-
-        // Cargar mapeo de archivo -> emisor (Razón Social)
-        try {
-            const resMapE = await fetchSeguro('/get_mapeo_emisores?_=' + Date.now());
-            mapeoEmisores = await resMapE.json();
-        } catch (e) {
-            console.error("Error cargando mapeo de emisores:", e);
+            console.error("Error cargando mapeos del historial:", e);
         }
     });
 
-    async function filtrarHistorial() {
+    let temporizadorBusquedaHistorial = null;
+    let versionBusquedaHistorial = 0;
+    let controladorBusquedaHistorial = null;
+
+    function cancelarBusquedaHistorial() {
+        clearTimeout(temporizadorBusquedaHistorial);
+        temporizadorBusquedaHistorial = null;
+        if (controladorBusquedaHistorial) controladorBusquedaHistorial.abort();
+        controladorBusquedaHistorial = null;
+        return ++versionBusquedaHistorial;
+    }
+
+    function programarBusquedaHistorial() {
+        const version = cancelarBusquedaHistorial();
+        if (!document.getElementById('buscador')?.value.trim()) {
+            return ejecutarBusquedaHistorial(version);
+        }
+        temporizadorBusquedaHistorial = setTimeout(() => {
+            temporizadorBusquedaHistorial = null;
+            ejecutarBusquedaHistorial(version);
+        }, 250);
+    }
+
+    function filtrarHistorial() {
+        return ejecutarBusquedaHistorial(cancelarBusquedaHistorial());
+    }
+
+    async function ejecutarBusquedaHistorial(version) {
         const inputBuscador = document.getElementById('buscador');
         const query = inputBuscador ? inputBuscador.value.toLowerCase().trim() : '';
         
@@ -431,13 +454,25 @@
 
         // Si hay consulta por texto, le preguntamos al backend
         if (query !== '') {
+            const controlador = new AbortController();
+            controladorBusquedaHistorial = controlador;
             try {
-                const res = await fetchSeguro('/buscar_archivos?q=' + encodeURIComponent(query));
-                archivosValidosDeBusqueda = await res.json();
+                const res = await fetchSeguro('/buscar_archivos?q=' + encodeURIComponent(query), {
+                    signal: controlador.signal
+                });
+                if (!res.ok) throw new Error('No se pudo completar la búsqueda');
+                const resultado = await res.json();
+                if (!Array.isArray(resultado)) throw new Error('Respuesta de búsqueda no válida');
+                archivosValidosDeBusqueda = resultado;
             } catch (e) {
+                if (e.name === 'AbortError' || version !== versionBusquedaHistorial) return;
                 console.error("Error buscando archivos:", e);
+            } finally {
+                if (controladorBusquedaHistorial === controlador) controladorBusquedaHistorial = null;
             }
         }
+        // Una respuesta anterior nunca debe reemplazar los filtros más recientes.
+        if (version !== versionBusquedaHistorial) return;
 
         itemsUI.forEach(li => {
             const nombreArchivo = li.querySelector('.archivo-nombre').textContent.trim();

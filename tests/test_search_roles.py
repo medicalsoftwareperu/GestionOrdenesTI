@@ -123,4 +123,54 @@ class SearchRoleTests(unittest.TestCase):
         self.assertTrue(self.client.post('/vincular_oc',json={'nombre_op':self.names['pagos'],'nombre_oc':self.names['compras']}).json['success'])
 
 
+    def test_combined_maps_preserve_all_four_roles_and_legacy_endpoints(self):
+        self.seed()
+        for role in set(self.roles.values()):
+            self.login(role)
+            response = self.client.get('/get_mapeos_historial')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json, {
+                'proveedores': self.client.get('/get_mapeo_proveedores').json,
+                'emisores': self.client.get('/get_mapeo_emisores').json})
+            self.assertEqual(set(response.json['proveedores']), self.expected(role))
+            self.assertEqual(response.headers['Cache-Control'], 'no-store')
+
+    def test_combined_maps_keep_per_field_edit_fallback_and_skip_corrupt_or_orphan_metadata(self):
+        self.seed(); self.login('sistemas')
+        name = self.names['compras']
+        folder = self.root / 'historial/compras_editadas'
+        (folder / (name[:-4]+'.json')).write_text(json.dumps({'prov_nombre': 'Editado'}))
+        (folder / 'OC_20260930-9999.json').write_text(json.dumps({'prov_nombre': 'No exponer'}))
+        result = self.client.get('/get_mapeos_historial').json
+        self.assertEqual(result['proveedores'][name], 'Editado')
+        self.assertEqual(result['emisores'][name], 'Emisor privado compras')
+        self.assertNotIn('OC_20260930-9999.pdf', result['proveedores'])
+        (folder / (name[:-4]+'.json')).write_text('{invalid')
+        self.assertEqual(self.client.get('/get_mapeos_historial').json['proveedores'][name], 'Proveedor privado compras')
+
+    def test_combined_maps_require_session_and_unknown_role_returns_empty_maps(self):
+        self.seed()
+        self.assertEqual(self.client.get('/get_mapeos_historial').status_code, 302)
+        self.login('sistemas')
+        with self.client.session_transaction() as session: username = session['usuario']
+        with patch.dict(self.module.USER_ROLES, {username: 'desconocido'}):
+            self.assertEqual(self.client.get('/get_mapeos_historial').json, {'proveedores': {}, 'emisores': {}})
+
+    def test_search_does_not_scan_unmatched_documents(self):
+        self.seed(); self.login('sistemas')
+        name = self.names['compras']
+        self.index(name, 'unico')
+        with patch.object(self.module.os, 'listdir', side_effect=AssertionError('Unnecessary full directory scan')):
+            self.assertEqual(self.client.get('/buscar_archivos?q=unico').json, [name])
+            self.assertEqual(self.client.get('/buscar_archivos?q=noexiste').json, [])
+
+    def test_search_rejects_symlink_to_document_outside_its_area(self):
+        self.seed(); self.login('sistemas')
+        name = 'OC_20260930-0777.pdf'
+        target = self.root / 'historial/pagos' / self.names['pagos']
+        (self.root / 'historial/compras' / name).symlink_to(target)
+        self.index(name)
+        self.assertNotIn(name, self.client.get('/buscar_archivos?q=equipo').json)
+
+
 if __name__=='__main__':unittest.main()

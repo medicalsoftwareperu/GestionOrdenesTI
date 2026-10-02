@@ -1255,9 +1255,9 @@ def documentos_visibles_por_rol(rol):
     return documentos
 
 
-def mapeo_documentos_por_rol(campo, rol):
+def mapeos_documentos_por_rol(rol):
     documentos = documentos_visibles_por_rol(rol)
-    mapeo = {}
+    mapeos = {'proveedores': {}, 'emisores': {}}
     for tipo in tipos_documentos_por_rol(rol):
         # Conservar la prioridad de la información editada sobre la original.
         for carpeta in configuracion_documento(tipo)[1:3]:
@@ -1271,12 +1271,26 @@ def mapeo_documentos_por_rol(campo, rol):
                     ruta = ruta_documento_segura(carpeta, nombre)
                     with open(ruta, encoding='utf-8') as archivo:
                         datos = json.load(archivo)
-                    valor = datos.get(campo)
-                    if valor:
-                        mapeo[nombre_pdf] = valor
+                    for clave, campo in [('proveedores', 'prov_nombre'), ('emisores', 'razon_social')]:
+                        valor = datos.get(campo)
+                        if valor:
+                            mapeos[clave][nombre_pdf] = valor
                 except (OSError, ValueError, AttributeError):
                     continue
-    return mapeo
+    return mapeos
+
+
+def mapeo_documentos_por_rol(campo, rol):
+    clave = {'prov_nombre': 'proveedores', 'razon_social': 'emisores'}[campo]
+    return mapeos_documentos_por_rol(rol)[clave]
+
+
+@app.route('/get_mapeos_historial')
+@documentos_bloqueados
+def get_mapeos_historial():
+    respuesta = jsonify(mapeos_documentos_por_rol(session.get('rol')))
+    respuesta.headers['Cache-Control'] = 'no-store'
+    return respuesta
 
 
 @app.route('/get_mapeo_proveedores')
@@ -1307,8 +1321,19 @@ def buscar_archivos():
             f'WHERE contenido LIKE ? AND ({filtros})', (f'%{q}%', *patrones)).fetchall()
     finally:
         conn.close()
-    documentos = documentos_visibles_por_rol(rol)
-    return jsonify([r['nombre_archivo'] for r in resultados if r['nombre_archivo'] in documentos])
+    visibles = []
+    # Validar solo candidatos del índice, con las mismas comprobaciones de área y ruta.
+    for row in resultados:
+        nombre = row['nombre_archivo']
+        for tipo in tipos:
+            try:
+                validar_nombre_documento(tipo, nombre, permitir_historico=True)
+                if documento_existe(tipo, nombre):
+                    visibles.append(nombre)
+                    break
+            except ValueError:
+                continue
+    return jsonify(visibles)
 
 def normalizar_nombre_empresa(name):
     if not name:
