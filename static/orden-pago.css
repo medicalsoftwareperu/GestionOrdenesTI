@@ -1,0 +1,85 @@
+/* El documento clonado por html2pdf conserva style.css: estos estilos solo
+   alcanzan el formulario que es hijo directo del body, y solo en pantalla. */
+@media screen {
+  body.pago-page { --pago-bg:#f5f6f8; --pago-surface:#fff; --pago-text:#26313e; --pago-muted:#637080; --pago-border:#e0e4ea; --pago-accent:#9d3046; --pago-soft:#f7ecef; background:var(--pago-bg); padding:0 36px 24px; }
+  [data-theme="dark"] body.pago-page { --pago-bg:#171c23; --pago-surface:#202731; --pago-text:#edf0f4; --pago-muted:#a6b1bf; --pago-border:#35404d; --pago-accent:#eea4b4; --pago-soft:#382a34; }
+  .pago-brand-header,.pago-intro,body.pago-page>.toolbar,.pago-save { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--pago-text); max-width:1200px; margin-left:auto; margin-right:auto; }
+  .pago-brand-header { display:flex; justify-content:space-between; align-items:center; min-height:100px; gap:20px; border-bottom:1px solid var(--pago-border); }
+  .pago-brand { display:flex; align-items:center; gap:20px; }
+  .pago-brand img { width:126px; height:46px; object-fit:contain; background:white; border-radius:3px; }
+  .pago-brand>span { padding-left:20px; border-left:1px solid var(--pago-border); display:flex; flex-direction:column; gap:4px; }
+  .pago-brand strong { font-size:13px; font-weight:600; }
+  .pago-brand small { color:var(--pago-muted); font-size:11px; }
+  .pago-account { display:flex; gap:8px; align-items:center; font-size:12px; font-weight:600; }
+  .pago-account>span { font-size:10px; padding:8px; border-radius:7px; color:var(--pago-accent); background:var(--pago-soft); }
+  .pago-intro { position:relative; padding:30px 100px 24px 0; }
+  .pago-intro>p { font-size:10px; letter-spacing:.12em; font-weight:600; color:var(--pago-accent); margin-bottom:12px; }
+  .pago-intro>h1 { font-size:30px; font-weight:600; letter-spacing:-.035em; margin-bottom:9px; }
+  .pago-intro>span { font-size:13px; color:var(--pago-muted); line-height:1.7; }
+  .pago-intro svg { position:absolute; right:6px; top:36px; width:80px; height:64px; color:var(--pago-accent); opacity:.7; }
+  body.pago-page>.toolbar { margin-bottom:20px; padding:14px 16px; border:1px solid var(--pago-border); background:var(--pago-surface); border-radius:10px; gap:8px; }
+  body.pago-page>.toolbar h1 { display:none; }
+  body.pago-page>.toolbar .btn,.pago-save .btn { font-family:inherit; font-size:12px; padding:10px 15px; border-radius:7px; border:1px solid var(--pago-border); background:var(--pago-surface); color:var(--pago-text); }
+  body.pago-page>.toolbar .btn-success,.pago-save .btn { background:#963148!important; border-color:#963148; color:white; }
+  body.pago-page>.toolbar .btn-primary { background:var(--pago-bg); }
+  body.pago-page>.toolbar .btn:focus-visible,.pago-save .btn:focus-visible { outline:2px solid var(--pago-accent); outline-offset:3px; }
+  .pago-save { margin-top:22px!important; margin-bottom:10px!important; justify-content:flex-end!important; }
+  .pago-save .btn { font-size:13px!important; padding:13px 22px!important; box-shadow:none!important; }
+
+  body.pago-page>#oc-doc { max-width:1200px; background:var(--pago-surface); color:var(--pago-text); border:1px solid var(--pago-border); border-radius:12px; box-shadow:none; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  body.pago-page>#oc-doc #emisor-top-bar { background:var(--pago-soft)!important; color:var(--pago-text)!important; padding:22px 20px!important; border-bottom:1px solid var(--pago-border)!important; font-family:inherit!important; }
+  body.pago-page>#oc-doc #emisor-top-bar input { font-family:inherit; color:var(--pago-text)!important; }
+  body.pago-page>#oc-doc #emisor-top-bar input::placeholder { color:var(--pago-muted); opacity:1; }
+  body.pago-page>#oc-doc #razon-social { font-size:19px!important; }
+  body.pago-page>#oc-doc #direccion { max-width:calc(100% - 70px); }
+  body.pago-page>#oc-doc .doc-header { border-bottom:1px solid var(--pago-border)!important; }
+  body.pago-page>#oc-doc .doc-title { font-family:inherit!important; color:var(--pago-text)!important; font-size:16px!important; font-weight:600; }
+  body.pago-page>#oc-doc .doc-num-cell { border-left:1px solid var(--pago-border)!important; }
+  body.pago-page>#oc-doc .doc-num-label { font-size:10px!important; color:var(--pago-muted)!important; }
+  body.pago-page>#oc-doc #oc-number { font-family:inherit; color:var(--pago-accent)!important; font-size:16px!important; }
+  body.pago-page>#oc-doc .data-grid.cols-4 { grid-template-columns:150px minmax(0,1fr) 150px minmax(0,1fr); padding:20px; gap:14px; border:0; }
+  body.pago-page>#oc-doc .data-cell { padding:0; border:0; min-width:0; }
+  body.pago-page>#oc-doc .lbl { font-size:10px; letter-spacing:.04em; color:var(--pago-muted); }
+  body.pago-page>#oc-doc .field { flex:1; width:100%; min-width:0; font-family:inherit; font-size:13px; font-weight:500!important; padding:10px 12px!important; min-height:38px; border:1px solid var(--pago-border)!important; border-radius:6px; background:var(--pago-bg)!important; color:var(--pago-text)!important; }
+  body.pago-page>#oc-doc .field:focus,body.pago-page>#oc-doc .items-table input:focus { outline:1px solid var(--pago-accent); background:var(--pago-soft)!important; }
+  body.pago-page>#oc-doc .custom-dropdown { background:var(--pago-surface); color:var(--pago-text)!important; border-color:var(--pago-border); border-radius:6px; font-family:inherit; }
+  body.pago-page>#oc-doc .dropdown-item { color:var(--pago-text); font-family:inherit; }
+  body.pago-page>#oc-doc .dropdown-item:hover { background:var(--pago-soft); color:var(--pago-accent); }
+  body.pago-page>#oc-doc .items-wrapper { margin:4px 20px 18px!important; padding:0!important; border:1px solid var(--pago-border); border-radius:8px; }
+  body.pago-page>#oc-doc .items-table { min-width:600px; }
+  body.pago-page>#oc-doc .items-table thead tr { background:var(--pago-bg); color:var(--pago-muted); }
+  body.pago-page>#oc-doc .items-table th { font-family:inherit; font-size:10px; letter-spacing:.04em; padding:13px 10px; border-color:var(--pago-border); }
+  body.pago-page>#oc-doc .items-table td { padding:8px; border-color:var(--pago-border); }
+  body.pago-page>#oc-doc .items-table tbody tr { border-color:var(--pago-border); }
+  body.pago-page>#oc-doc .items-table tbody tr:nth-child(even) { background:var(--pago-bg); }
+  body.pago-page>#oc-doc .items-table input { font-family:inherit; color:var(--pago-text); font-size:12px; min-height:32px; }
+  body.pago-page>#oc-doc .btn-del-row { color:var(--pago-accent); }
+  body.pago-page>#oc-doc .total-lbl { font-size:11px; color:var(--pago-muted); }
+  body.pago-page>#oc-doc .total-val { font-family:inherit; color:var(--pago-accent); font-size:20px; }
+  body.pago-page>#oc-doc .registro-pagos-container { font-family:inherit; border:1px solid var(--pago-border); border-radius:8px; }
+  body.pago-page>#oc-doc .registro-pagos-title { background:var(--pago-bg); color:var(--pago-muted); padding:12px; font-size:10px; letter-spacing:.08em; }
+  body.pago-page>#oc-doc .registro-pagos-bar { background:var(--pago-soft); color:var(--pago-accent); padding:14px; font-size:15px; }
+  body.pago-page>#oc-doc #footer-total { font-family:inherit; color:var(--pago-muted); font-size:11px; }
+  body.pago-page>#oc-doc .sigs { border-color:var(--pago-border)!important; margin-top:20px!important; }
+  body.pago-page>#oc-doc .sig-box { border-color:var(--pago-border)!important; padding:55px 10px 22px!important; }
+  body.pago-page>#oc-doc .sig-line { border-color:var(--pago-muted); }
+  body.pago-page>#oc-doc .sig-label { color:var(--pago-muted); font-family:inherit; font-size:10px; }
+  @media(max-width:650px) {
+    body.pago-page { padding:0 16px 20px; }
+    .pago-brand-header { min-height:86px; }
+    .pago-brand img { width:108px; height:39px; }
+    .pago-brand>span { display:none; }
+    .pago-intro { padding-right:0; }
+    .pago-intro svg { display:none; }
+    .pago-intro h1 { font-size:27px; }
+    body.pago-page>.toolbar { padding:12px; }
+    body.pago-page>.toolbar .btn { padding:9px 10px; font-size:11px; }
+    body.pago-page>#oc-doc .doc-header { flex-wrap:wrap; }
+    body.pago-page>#oc-doc .doc-title-cell,body.pago-page>#oc-doc .doc-num-cell { width:100%!important; padding:12px 16px!important; border-left:0!important; }
+    body.pago-page>#oc-doc .data-grid.cols-4 { grid-template-columns:minmax(0,1fr); padding:16px; gap:8px; }
+    body.pago-page>#oc-doc .data-cell.span-3 { grid-column:auto; }
+    body.pago-page>#oc-doc .data-cell:has(.lbl) { margin-top:8px; }
+    body.pago-page>#oc-doc .items-wrapper { margin-left:16px!important; margin-right:16px!important; }
+    body.pago-page>#oc-doc .sig-label { font-size:9px; }
+  }
+}

@@ -93,8 +93,23 @@
       }
     }
   </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="{{ url_for('static', filename='orden-pago.css') }}?v=20261002-1">
 </head>
-<body>
+<body class="pago-page">
+<header class="pago-brand-header no-print">
+  <div class="pago-brand">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical">
+    <span><strong>Contabilidad</strong><small>Portal interno de gestión</small></span>
+  </div>
+  <div class="pago-account"><span aria-hidden="true">CO</span>{{ session['usuario'] }}</div>
+</header>
+<div class="pago-intro no-print">
+  <p>GRUPO MEDICAL · CONTABILIDAD</p>
+  <h1>Orden de pago</h1>
+  <span>Registra pagos a proveedores y genera sus comprobantes.</span>
+  <svg viewBox="0 0 80 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M15 8h30l13 13v35l-7-4-7 4-7-4-7 4-7-4-8 4Z"/><path d="M45 8v14h13M25 30h23M25 39h15"/><circle cx="60" cy="44" r="12"/><path d="m54 44 4 4 8-9"/></svg>
+</div>
 
 <div class="toolbar no-print">
   <h1>Generador de Orden de Pago</h1>
