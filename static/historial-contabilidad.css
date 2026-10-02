@@ -1,0 +1,25 @@
+/* Historial de Contabilidad: presentación aislada, acciones originales. */
+.conta-workspace { --text-muted: var(--ti-muted); }
+.conta-workspace .historial-container { grid-template-columns: minmax(0, 1fr); }
+.conta-workspace .columna-historial { grid-column: 1 / -1 !important; min-width: 0; }
+.conta-workspace .buscador-container .ti-filter-provider { flex: 1; min-width: 0; }
+.conta-workspace .archivo-item { gap: 22px; }
+.conta-workspace .archivo-nombre { min-width: 0; line-height: 1.6; }
+.conta-workspace .archivo-item > div { justify-content: flex-end; }
+.conta-workspace .contenedor-vinculo-oc { flex-wrap: wrap; gap: 8px; margin-right: 12px; }
+.conta-workspace .input-vinculo-oc { width: 170px; padding: 9px 10px; border: 1px solid var(--ti-border); border-radius: 6px; background: var(--ti-bg); color: var(--ti-text); }
+.conta-workspace .input-vinculo-oc:focus { border-color: var(--ti-accent); box-shadow: 0 0 0 3px var(--ti-soft); }
+.conta-workspace .archivo-item > div > .btn-ver:first-of-type { color: var(--ti-accent) !important; background: var(--ti-soft) !important; border-color: transparent; }
+.conta-workspace .circulo-estado { width: 8px; height: 8px; }
+.conta-workspace .enlace-factura, .conta-workspace .texto-pendiente-factura { font-size: 11px !important; }
+.conta-workspace .dropdown-predictivo { border-color: var(--ti-border); border-radius: 7px; box-shadow: 0 8px 24px #00000014; }
+.conta-workspace .dropdown-predictivo li { padding: 10px; border-color: var(--ti-border); }
+.conta-workspace .dropdown-predictivo li:hover { background: var(--ti-soft); color: var(--ti-accent); }
+@media (max-width: 1000px) {
+    .conta-workspace .archivo-item > div { justify-content: flex-start; }
+}
+@media (max-width: 650px) {
+    .conta-workspace .buscador-container .ti-filter-provider { width: 100%; }
+    .conta-workspace .contenedor-vinculo-oc { width: 100%; margin-right: 0; }
+    .conta-workspace .archivo-item > div { row-gap: 12px !important; }
+}

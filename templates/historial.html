@@ -178,19 +178,37 @@
             font-weight: bold;
         }
     </style>
-{% if session['rol'] == 'sistemas' %}
+{% if session['rol'] in ['sistemas', 'contabilidad'] %}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='vistas-ti.css') }}?v=20261001-2">
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');</script>
 {% endif %}
+{% if session['rol'] == 'contabilidad' %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='historial-contabilidad.css') }}?v=20261002-1">
+{% endif %}
 </head>
-<body{% if session['rol'] == 'sistemas' %} class="ti-workspace"{% endif %}>
+<body{% if session['rol'] == 'sistemas' %} class="ti-workspace"{% elif session['rol'] == 'contabilidad' %} class="ti-workspace conta-workspace"{% endif %}>
 
 {% if session['rol'] == 'sistemas' %}
 {% set pagina_ti = 'historial' %}
 {% include 'encabezado_ti.html' %}
 <div class="ti-page-heading">
     <div><p class="ti-view-eyebrow">GRUPO MEDICAL · SISTEMAS</p><h1>Historial de documentos</h1><p class="ti-view-description">Consulta tus compras y bajas, edita documentos y gestiona sus facturas.</p></div>
+    <a href="{{ url_for('index') }}" class="btn btn-outline">Volver al panel</a>
+</div>
+{% elif session['rol'] == 'contabilidad' %}
+<header class="ti-view-header">
+    <a href="{{ url_for('index') }}" class="ti-view-brand" aria-label="Grupo Medical, volver al panel">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Grupo Medical">
+        <span><strong>Contabilidad</strong><small>Portal interno de gestión</small></span>
+    </a>
+    <div class="ti-view-navigation">
+        <nav aria-label="Navegación de Contabilidad"><a href="{{ url_for('index') }}">Panel</a><a href="{{ url_for('historial') }}" class="active" aria-current="page">Historial</a></nav>
+        <span class="ti-view-account"><span aria-hidden="true">CO</span>{{ session['usuario'] }}</span>
+    </div>
+</header>
+<div class="ti-page-heading">
+    <div><p class="ti-view-eyebrow">GRUPO MEDICAL · CONTABILIDAD</p><h1>Historial de pagos</h1><p class="ti-view-description">Consulta tus pagos, vincula órdenes de compra y descarga sus facturas.</p></div>
     <a href="{{ url_for('index') }}" class="btn btn-outline">Volver al panel</a>
 </div>
 {% else %}
@@ -211,6 +229,11 @@
         <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
             <option value="">🏢 Todos los Proveedores</option>
         </select>
+    {% elif session['rol'] == 'contabilidad' %}
+        <div class="ti-filter-provider"><label for="filtro-proveedor">Proveedor</label>
+        <select id="filtro-proveedor" class="input-buscador" onchange="filtrarHistorial()"><option value="">🏢 Todos los Proveedores</option></select></div>
+        <div class="ti-filter-provider"><label for="filtro-razon-social">Empresa emisora</label>
+        <select id="filtro-razon-social" class="input-buscador" onchange="filtrarHistorial()"><option value="">🏢 Todas las Empresas Emisoras</option></select></div>
     {% else %}
         <select id="filtro-proveedor" class="input-buscador" style="flex: 1; margin-top: 0; cursor: pointer; padding-right: 30px;" onchange="filtrarHistorial()">
             <option value="">🏢 Todos los Proveedores</option>
